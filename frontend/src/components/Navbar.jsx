@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
+import {
   FaSearch,
   FaBars,
   FaTimes,
@@ -10,7 +10,33 @@ import {
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollDirection, setScrollDirection] = useState('up');
   const location = useLocation();
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setScrollDirection('down');
+        setIsScrolled(true);
+      } else if (currentScrollY < lastScrollY) {
+        setScrollDirection('up');
+        setIsScrolled(currentScrollY > 50);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   const isActive = (path) => location.pathname === path;
 
@@ -24,7 +50,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50">
+    <nav className={`sticky top-0 z-50 transition-transform duration-300 ${scrollDirection === 'down' ? '-translate-y-full' : 'translate-y-0'} ${isScrolled ? 'shadow-lg' : ''}`}>
       {/* Top Bar */}
       <div className="bg-blue-900 text-white flex flex-col sm:flex-row justify-between items-center px-6 py-2">
         <div className="flex items-center space-x-4">
