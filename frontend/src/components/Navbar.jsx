@@ -37,12 +37,6 @@ export default function Navbar() {
         </div>
         <div className="flex items-center space-x-4">
           <Link 
-            to="/donation" 
-            className="bg-yellow-400 text-blue-900 px-5 py-2 rounded hover:bg-yellow-300 font-bold shadow-lg transition duration-300"
-          >
-            DONATE NOW
-          </Link>
-          <Link 
             to="/volunteer" 
             className="bg-white text-blue-900 px-5 py-2 rounded hover:bg-gray-200 font-bold shadow-lg transition duration-300"
           >
