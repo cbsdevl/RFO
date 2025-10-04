@@ -14,6 +14,7 @@ import {
   FaUserGraduate,
   FaCheckCircle,
   FaArrowRight,
+  FaArrowLeft,
   FaInfoCircle
 } from 'react-icons/fa';
 import BackButton from '../components/BackButton';
@@ -21,6 +22,8 @@ import BackButton from '../components/BackButton';
 export default function SupportProgram() {
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [supportType, setSupportType] = useState(null);
+  const [isGuidedMode, setIsGuidedMode] = useState(false);
+  const [currentProgramIndex, setCurrentProgramIndex] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -139,6 +142,21 @@ export default function SupportProgram() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-20">
       <div className="container mx-auto px-4">
         <BackButton />
+        {/* Support Now Button */}
+        <div className="text-center mb-8">
+          <button
+            onClick={() => {
+              setIsGuidedMode(true);
+              setCurrentProgramIndex(0);
+              setSelectedProgram(null);
+              setSupportType(null);
+            }}
+            className="bg-green-600 text-white px-10 py-4 rounded-lg hover:bg-green-700 transition-colors duration-300 font-bold text-xl shadow-lg"
+          >
+            Support Now - Get Started!
+          </button>
+          <p className="text-gray-600 mt-2">Take a guided tour through our programs</p>
+        </div>
         {/* Step Indicator */}
         <div className="max-w-2xl mx-auto mb-12">
           <div className="flex items-center justify-center space-x-4">
@@ -182,50 +200,109 @@ export default function SupportProgram() {
             Step 1: Choose a Program to Support
           </h2>
           <p className="text-center text-gray-600 mb-8">
-            Tap or click on any program below to select it. You can change your choice anytime.
+            {isGuidedMode
+              ? "Let's find the right program for you. Here's one option:"
+              : "Tap or click on any program below to select it. You can change your choice anytime."
+            }
           </p>
         </div>
 
-        {/* Programs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {programs.map((program) => {
-            const Icon = program.icon;
-            return (
-              <div key={program.id} className="relative">
-                <button
-                  onClick={() => {
-                    setSelectedProgram(program);
-                    setSupportType(null);
-                    // Scroll to support types
-                    document.getElementById('support-types').scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  title={`Select ${program.name} program`}
-                  className={`w-full p-6 rounded-xl transition-all duration-300 ${
-                    selectedProgram?.id === program.id
-                      ? `bg-gradient-to-r ${program.color} text-white shadow-lg scale-105`
-                      : `${program.bgColor} hover:scale-105 hover:shadow-md`
-                  }`}
-                >
-                  <Icon className="text-4xl mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">{program.name}</h3>
-                  <p className="text-sm mb-4">{program.description}</p>
+        {/* Programs Display */}
+        {isGuidedMode ? (
+          <div className="max-w-md mx-auto mb-12">
+            {(() => {
+              const program = programs[currentProgramIndex];
+              const Icon = program.icon;
+              return (
+                <div className="bg-white rounded-xl shadow-lg p-8">
                   <div className="text-center">
-                    <span className="inline-block bg-white bg-opacity-20 text-sm px-3 py-1 rounded-full">
-                      Click to choose this program
-                    </span>
-                  </div>
-                </button>
-                {selectedProgram?.id === program.id && (
-                  <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
-                      Selected ✓
+                    <Icon className="text-6xl text-blue-600 mb-4" />
+                    <h3 className="text-2xl font-semibold mb-4">{program.name}</h3>
+                    <p className="text-gray-600 mb-6">{program.description}</p>
+                    <div className="flex flex-wrap justify-center gap-2 mb-6">
+                      <button
+                        onClick={() => {
+                          setSelectedProgram(program);
+                          setSupportType(null);
+                          document.getElementById('support-types').scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        This is for me
+                      </button>
+                      <button
+                        onClick={() => {
+                          const nextIndex = (currentProgramIndex + 1) % programs.length;
+                          setCurrentProgramIndex(nextIndex);
+                        }}
+                        className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                      >
+                        Show me another
+                      </button>
+                      <button
+                        onClick={() => setIsGuidedMode(false)}
+                        className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        Skip to all programs
+                      </button>
+                    </div>
+                    <div className="flex justify-center items-center space-x-4">
+                      {currentProgramIndex > 0 && (
+                        <button
+                          onClick={() => setCurrentProgramIndex(currentProgramIndex - 1)}
+                          className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <FaArrowLeft /> <span>Back</span>
+                        </button>
+                      )}
+                      <span className="text-gray-500">{currentProgramIndex + 1} of {programs.length}</span>
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })()}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {programs.map((program) => {
+              const Icon = program.icon;
+              return (
+                <div key={program.id} className="relative">
+                  <button
+                    onClick={() => {
+                      setSelectedProgram(program);
+                      setSupportType(null);
+                      // Scroll to support types
+                      document.getElementById('support-types').scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    title={`Select ${program.name} program`}
+                    className={`w-full p-6 rounded-xl transition-all duration-300 ${
+                      selectedProgram?.id === program.id
+                        ? `bg-gradient-to-r ${program.color} text-white shadow-lg scale-105`
+                        : `${program.bgColor} hover:scale-105 hover:shadow-md`
+                    }`}
+                  >
+                    <Icon className="text-4xl mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">{program.name}</h3>
+                    <p className="text-sm mb-4">{program.description}</p>
+                    <div className="text-center">
+                      <span className="inline-block bg-white bg-opacity-20 text-sm px-3 py-1 rounded-full">
+                        Click to choose this program
+                      </span>
+                    </div>
+                  </button>
+                  {selectedProgram?.id === program.id && (
+                    <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+                      <div className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                        Selected ✓
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Continue Button after Program Selection */}
         {selectedProgram && !supportType && (

@@ -28,3 +28,13 @@
 - [x] Simplify program and support type names and descriptions for non-technical users
 - [x] Improve form labels, placeholders, and button text
 - [x] Make requirements more conversational and easy to understand
+
+# TODO: Add Guided Flow to SupportProgram.jsx
+
+- [x] Add prominent "Support Now" button at the top of the page
+- [x] Implement guided flow state management (guided mode, current program index)
+- [x] Create step-by-step interface showing one program at a time in guided mode
+- [x] Add navigation buttons (Next, Back, Skip to All Programs) for guided flow
+- [x] Keep existing full grid view accessible for advanced users
+- [ ] Ensure guided flow works on all devices (responsive design)
+- [ ] Test the user experience with the new guided flow
