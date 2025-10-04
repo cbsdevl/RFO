@@ -1,0 +1,694 @@
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+
+// Load environment variables from .env file
+dotenv.config();
+
+const app = express();
+
+// Middleware
+app.use(cors({ origin: 'http://localhost:5173' })); // Allow frontend at Vite's default port
+app.use(express.json());
+
+// Serve static files for uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Multer setup for child image uploads
+const childStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/child-images/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const uploadChild = multer({ storage: childStorage });
+
+// Multer setup for news image uploads
+const newsStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/news-images/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const uploadNews = multer({ storage: newsStorage });
+
+// MySQL connection
+const db = mysql.createConnection({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASS || '',
+  database: process.env.DB_NAME || 'rfo_db',
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('MySQL connection error:', err);
+    process.exit(1);
+  }
+  console.log('MySQL Connected');
+});
+
+// JWT Secret (use env in production)
+const JWT_SECRET = process.env.JWT_SECRET || 'rfo_secret_key_change_me';
+
+// Middleware: Verify JWT for admin routes
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
+    req.user = user;
+    next();
+  });
+};
+
+// Public: Log a donation with optional child_need_id and gift information
+app.post('/api/donate', (req, res) => {
+  const { amount, donor_name, email, child_need_id, gift_id, gift_name, gift_category, payment_method, recurring } = req.body;
+  if (!amount || !donor_name || !email) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  let query = 'INSERT INTO donations (amount, donor_name, email, date, status';
+  let values = [amount, donor_name, email, 'pending'];
+  let placeholders = '?, ?, ?, NOW(), ?';
+
+  if (child_need_id) {
+    query += ', child_need_id';
+    placeholders += ', ?';
+    values.push(child_need_id);
+  }
+
+  if (gift_id) {
+    query += ', gift_id, gift_name, gift_category';
+    placeholders += ', ?, ?, ?';
+    values.push(gift_id, gift_name, gift_category);
+  }
+
+  if (payment_method) {
+    query += ', payment_method';
+    placeholders += ', ?';
+    values.push(payment_method);
+  }
+
+  if (recurring !== undefined) {
+    query += ', recurring';
+    placeholders += ', ?';
+    values.push(recurring);
+  }
+
+  query += ') VALUES (' + placeholders + ')';
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+     console.error('Error logging donation:', err);
+      return res.status(500).json({ error: 'Failed to log donation' });
+    }
+    const message = gift_id
+      ? 'Gift donation submitted and pending approval. Thank you for your generous gift!'
+      : 'Donation submitted and pending approval. Thank you!';
+    res.json({ message });
+  });
+});
+
+// Public: Get total donations
+app.get('/api/donations-total', (req, res) => {
+  const query = 'SELECT SUM(amount) as total FROM donations WHERE status = "approved"';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching donation total:', err);
+      return res.status(500).json({ error: 'Failed to fetch donation total' });
+    }
+    const total = results[0].total || 0;
+    res.json({ total });
+  });
+});
+
+// Public: Register for help
+app.post('/api/register-help', (req, res) => {
+  const { full_name, age, gender, phone, email, location, needs, message } = req.body;
+  if (!full_name || !phone || !location || !needs || needs.length === 0) {
+    return res.status(400).json({ error: 'Name, phone, location, and at least one need are required' });
+  }
+  const query = `INSERT INTO help_requests (full_name, age, gender, phone, email, location, needs, message) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  db.query(query, [full_name, age, gender, phone, email, location, JSON.stringify(needs), message], (err, result) => {
+    if (err) {
+      console.error('Error registering help request:', err);
+      return res.status(500).json({ error: 'Failed to register request' });
+    }
+    res.json({ message: 'Your request has been submitted! We will contact you soon.' });
+  });
+});
+
+// Admin: Login
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  const query = 'SELECT * FROM admins WHERE username = ?';
+  db.query(query, [username], async (err, results) => {
+    if (err) {
+      console.error('Database error during admin login:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    if (results.length === 0) {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+    const admin = results[0];
+    try {
+      const isValid = await bcrypt.compare(password, admin.password);
+      if (!isValid) return res.status(400).json({ error: 'Invalid credentials' });
+      const token = jwt.sign({ id: admin.id, username: admin.username, role: admin.role }, JWT_SECRET, { expiresIn: '1h' });
+      res.json({ token, user: { username: admin.username, role: admin.role } });
+    } catch (compareError) {
+      console.error('Error comparing password:', compareError);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+});
+
+// Admin: Get Dashboard Stats (Fixed with async/await - no Promise.all nesting)
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+  try {
+    // Helper function to run a query
+    const runQuery = (sql) => {
+      return new Promise((resolve, reject) => {
+        db.query(sql, (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      });
+    };
+
+    // Run all queries sequentially (or parallel with Promise.all if preferred)
+    const donationsCount = await runQuery('SELECT COUNT(*) as total FROM donations WHERE status = "approved"');
+    const totalAmount = await runQuery('SELECT SUM(amount) as total_amount FROM donations WHERE status = "approved"');
+    const totalRequests = await runQuery('SELECT COUNT(*) as total_requests FROM help_requests');
+    const pendingRequests = await runQuery('SELECT COUNT(*) as pending_requests FROM help_requests WHERE status = "Pending"');
+
+    res.json({
+      donations: donationsCount.total,
+      totalDonated: totalAmount.total_amount || 0,
+      helpRequests: totalRequests.total_requests,
+      pendingRequests: pendingRequests.pending_requests
+    });
+  } catch (err) {
+    console.error('Error fetching stats:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Get All Donations (with search/pagination)
+app.get('/api/admin/donations', authenticateToken, (req, res) => {
+  const { search, page = 1, limit = 10 } = req.query;
+  let query = 'SELECT * FROM donations ORDER BY date DESC LIMIT ? OFFSET ?';
+  let params = [parseInt(limit), (page - 1) * limit];
+  if (search) {
+    query = 'SELECT * FROM donations WHERE donor_name LIKE ? OR email LIKE ? ORDER BY date DESC LIMIT ? OFFSET ?';
+    params = [`%${search}%`, `%${search}%`, ...params.slice(1)];
+  }
+  db.query(query, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Export Donations to CSV
+app.get('/api/admin/donations/export', authenticateToken, (req, res) => {
+  db.query('SELECT * FROM donations', (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    let csv = 'ID,Amount,Donor Name,Email,Date,Status\n';
+    results.forEach(row => {
+      csv += `${row.id},${row.amount},"${row.donor_name}","${row.email}","${row.date}","${row.status}"\n`;
+    });
+    res.header('Content-Type', 'text/csv');
+    res.attachment('rfo-donations.csv');
+    res.send(csv);
+  });
+});
+
+// Admin: Update Donation Status
+app.put('/api/admin/donations/:id/status', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  const query = 'UPDATE donations SET status = ? WHERE id = ?';
+  db.query(query, [status, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Status updated successfully' });
+  });
+});
+
+// Admin: Get All Help Requests (with filters/pagination)
+app.get('/api/admin/help-requests', authenticateToken, (req, res) => {
+  const { status, search, page = 1, limit = 10 } = req.query;
+  let baseQuery = 'SELECT * FROM help_requests';
+  let whereClause = [];
+  let params = [];
+
+  if (status) {
+    whereClause.push('status = ?');
+    params.push(status);
+  }
+  if (search) {
+    whereClause.push('(full_name LIKE ? OR phone LIKE ? OR location LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  const fullQuery = baseQuery + (whereClause.length ? ' WHERE ' + whereClause.join(' AND ') : '') + ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+  params.push(parseInt(limit), (page - 1) * limit);
+
+  db.query(fullQuery, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Update Help Request Status
+app.put('/api/admin/help-requests/:id/status', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!['Pending', 'Reviewed', 'Approved', 'Rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  const query = 'UPDATE help_requests SET status = ? WHERE id = ?';
+  db.query(query, [status, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Status updated successfully' });
+  });
+});
+
+// Public: Get all child needs with donation progress
+app.get('/api/child-needs', (req, res) => {
+  const query = `
+    SELECT cn.*,
+           COALESCE(SUM(d.amount), 0) as donated_amount,
+           (COALESCE(SUM(d.amount), 0) / cn.money_needed) * 100 as progress_percentage
+    FROM child_needs cn
+    LEFT JOIN donations d ON cn.id = d.child_need_id AND d.status = 'approved'
+    WHERE cn.status = "active"
+    GROUP BY cn.id
+    ORDER BY cn.created_at DESC
+  `;
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Create child need
+app.post('/api/admin/child-needs', authenticateToken, uploadChild.single('image'), (req, res) => {
+  const { name, age, location, problem, money_needed } = req.body;
+  const image_url = req.file ? `/uploads/child-images/${req.file.filename}` : null;
+  if (!name || !age || !location || !problem || !money_needed) {
+    return res.status(400).json({ error: 'Name, age, location, problem, and money needed are required' });
+  }
+  const query = 'INSERT INTO child_needs (name, image_url, age, location, problem, money_needed, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "active", NOW())';
+  db.query(query, [name, image_url, age, location, problem, parseFloat(money_needed)], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Child need created successfully', id: result.insertId });
+  });
+});
+
+// Admin: Update child need
+app.put('/api/admin/child-needs/:id', authenticateToken, uploadChild.single('image'), (req, res) => {
+  const { id } = req.params;
+  const { name, age, location, problem, money_needed } = req.body;
+  const image_url = req.file ? `/uploads/child-images/${req.file.filename}` : null;
+  if (!name || !age || !location || !problem || !money_needed) {
+    return res.status(400).json({ error: 'Name, age, location, problem, and money needed are required' });
+  }
+  let query = 'UPDATE child_needs SET name = ?, age = ?, location = ?, problem = ?, money_needed = ?';
+  let params = [name, age, location, problem, parseFloat(money_needed)];
+  if (image_url) {
+    query += ', image_url = ?';
+    params.push(image_url);
+  }
+  query += ' WHERE id = ?';
+  params.push(id);
+  db.query(query, params, (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Child need updated successfully' });
+  });
+});
+
+// Admin: Delete child need
+app.delete('/api/admin/child-needs/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM child_needs WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Child need deleted successfully' });
+  });
+});
+
+// Admin: Get all child needs (admin view)
+app.get('/api/admin/child-needs', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM child_needs ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Public: Get all news
+app.get('/api/news', (req, res) => {
+  const query = 'SELECT id, title, excerpt, image_url, category, DATE_FORMAT(created_at, "%M %d, %Y") as date FROM news ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Public: Get single news article
+app.get('/api/news/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'SELECT * FROM news WHERE id = ?';
+  db.query(query, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'News not found' });
+    res.json(results[0]);
+  });
+});
+
+// Admin: Create news
+app.post('/api/admin/news', authenticateToken, uploadNews.single('image'), (req, res) => {
+  const { title, content, excerpt, category } = req.body;
+  const image_url = req.file ? `/uploads/news-images/${req.file.filename}` : null;
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Title and content are required' });
+  }
+  const query = 'INSERT INTO news (title, content, excerpt, image_url, category) VALUES (?, ?, ?, ?, ?)';
+  db.query(query, [title, content, excerpt, image_url, category], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'News created successfully', id: result.insertId });
+  });
+});
+
+// Admin: Update news
+app.put('/api/admin/news/:id', authenticateToken, uploadNews.single('image'), (req, res) => {
+  const { id } = req.params;
+  const { title, content, excerpt, category } = req.body;
+  const image_url = req.file ? `/uploads/news-images/${req.file.filename}` : null;
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Title and content are required' });
+  }
+  let query = 'UPDATE news SET title = ?, content = ?, excerpt = ?, category = ?';
+  let params = [title, content, excerpt, category];
+  if (image_url) {
+    query += ', image_url = ?';
+    params.push(image_url);
+  }
+  query += ' WHERE id = ?';
+  params.push(id);
+  db.query(query, params, (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'News updated successfully' });
+  });
+});
+
+// Admin: Delete news
+app.delete('/api/admin/news/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM news WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'News deleted successfully' });
+  });
+});
+
+// Admin: Get all news (admin view)
+app.get('/api/admin/news', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM news ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Public: Register as volunteer
+app.post('/api/volunteers', (req, res) => {
+  const { full_name, email, phone, skills, availability, message } = req.body;
+  if (!full_name || !email || !phone || !skills || !availability) {
+    return res.status(400).json({ error: 'Full name, email, phone, skills, and availability are required' });
+  }
+  const query = 'INSERT INTO volunteers (full_name, email, phone, skills, availability, message, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "pending", NOW())';
+  db.query(query, [full_name, email, phone, JSON.stringify(skills), availability, message], (err, result) => {
+    if (err) {
+      console.error('Error registering volunteer:', err);
+      return res.status(500).json({ error: 'Failed to register volunteer' });
+    }
+    res.json({ message: 'Your volunteer application has been submitted! We will contact you soon.' });
+  });
+});
+
+// Admin: Get all volunteers (with filters/pagination)
+app.get('/api/admin/volunteers', authenticateToken, (req, res) => {
+  const { status, search, page = 1, limit = 10 } = req.query;
+  let baseQuery = 'SELECT * FROM volunteers';
+  let whereClause = [];
+  let params = [];
+
+  if (status) {
+    whereClause.push('status = ?');
+    params.push(status);
+  }
+  if (search) {
+    whereClause.push('(full_name LIKE ? OR email LIKE ? OR phone LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  const fullQuery = baseQuery + (whereClause.length ? ' WHERE ' + whereClause.join(' AND ') : '') + ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+  params.push(parseInt(limit), (page - 1) * limit);
+
+  db.query(fullQuery, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Update volunteer status
+app.put('/api/admin/volunteers/:id/status', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  const query = 'UPDATE volunteers SET status = ? WHERE id = ?';
+  db.query(query, [status, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Status updated successfully' });
+  });
+});
+
+// Admin: Delete volunteer
+app.delete('/api/admin/volunteers/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM volunteers WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Volunteer deleted successfully' });
+  });
+});
+
+// Create volunteers table (one-time setup)
+app.post('/api/setup-volunteers-table', (req, res) => {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS volunteers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      full_name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      phone VARCHAR(50) NOT NULL,
+      skills JSON NOT NULL,
+      availability VARCHAR(100) NOT NULL,
+      message TEXT,
+      status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_status (status),
+      INDEX idx_email (email),
+      INDEX idx_created_at (created_at)
+    )
+  `;
+
+  db.query(createTableQuery, (err, result) => {
+    if (err) {
+      console.error('Error creating volunteers table:', err);
+      return res.status(500).json({ error: 'Failed to create volunteers table' });
+    }
+
+    // Insert sample data
+    const insertSampleQuery = `
+      INSERT INTO volunteers (full_name, email, phone, skills, availability, message, status) VALUES
+      ('John Doe', 'john@example.com', '+250788854883', '["teaching", "community"]', 'Weekdays (morning)', 'I want to help with education programs', 'pending'),
+      ('Jane Smith', 'jane@example.com', '+250788854884', '["medical", "fundraising"]', 'Weekends (afternoon)', 'Healthcare professional with fundraising experience', 'approved')
+    `;
+
+    db.query(insertSampleQuery, (insertErr, insertResult) => {
+      if (insertErr) {
+        console.error('Error inserting sample data:', insertErr);
+        return res.status(500).json({ error: 'Table created but failed to insert sample data' });
+      }
+      res.json({ message: 'Volunteers table created successfully with sample data' });
+    });
+  });
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'Server is running' });
+});
+
+// Public: Save contact message from Contact page
+app.post('/api/contact', (req, res) => {
+  const { name, email, subject, message } = req.body;
+  if (!name || !email || !subject || !message) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  const query = 'INSERT INTO contact_messages (name, email, subject, message, created_at) VALUES (?, ?, ?, ?, NOW())';
+  db.query(query, [name, email, subject, message], (err, result) => {
+    if (err) {
+      console.error('Error saving contact message:', err);
+      return res.status(500).json({ error: 'Failed to save message' });
+    }
+    res.json({ message: 'Message sent successfully' });
+  });
+});
+
+// Admin: Get all contact messages from Contact page
+app.get('/api/admin/contact-messages', authenticateToken, (req, res) => {
+  const query = 'SELECT id, name, email, subject, message, created_at FROM contact_messages ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching contact messages:', err);
+      return res.status(500).json({ error: 'Failed to fetch contact messages' });
+    }
+    res.json(results);
+  });
+});
+
+// Public: Get all testimonials
+app.get('/api/testimonials', (req, res) => {
+  const query = 'SELECT id, name, role, image_url, quote FROM testimonials ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Get all testimonials (admin view)
+app.get('/api/admin/testimonials', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM testimonials ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Create testimonial
+app.post('/api/admin/testimonials', authenticateToken, (req, res) => {
+  const { name, role, image_url, quote } = req.body;
+  if (!name || !role || !quote) {
+    return res.status(400).json({ error: 'Name, role, and quote are required' });
+  }
+  const query = 'INSERT INTO testimonials (name, role, image_url, quote) VALUES (?, ?, ?, ?)';
+  db.query(query, [name, role, image_url, quote], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Testimonial created successfully', id: result.insertId });
+  });
+});
+
+// Admin: Update testimonial
+app.put('/api/admin/testimonials/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { name, role, image_url, quote } = req.body;
+  if (!name || !role || !quote) {
+    return res.status(400).json({ error: 'Name, role, and quote are required' });
+  }
+  const query = 'UPDATE testimonials SET name = ?, role = ?, image_url = ?, quote = ? WHERE id = ?';
+  db.query(query, [name, role, image_url, quote, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Testimonial updated successfully' });
+  });
+});
+
+// Admin: Delete testimonial
+app.delete('/api/admin/testimonials/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM testimonials WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Testimonial deleted successfully' });
+  });
+});
+
+// Public: Get all partners
+app.get('/api/partners', (req, res) => {
+  const query = 'SELECT id, name, logo_url, category, website_url, description FROM partners ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Get all partners (admin view)
+app.get('/api/admin/partners', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM partners ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Create partner
+app.post('/api/admin/partners', authenticateToken, (req, res) => {
+  const { name, logo_url, category, website_url, description } = req.body;
+  if (!name || !category) {
+    return res.status(400).json({ error: 'Name and category are required' });
+  }
+  const query = 'INSERT INTO partners (name, logo_url, category, website_url, description) VALUES (?, ?, ?, ?, ?)';
+  db.query(query, [name, logo_url, category, website_url, description], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Partner created successfully', id: result.insertId });
+  });
+});
+
+// Admin: Update partner
+app.put('/api/admin/partners/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { name, logo_url, category, website_url, description } = req.body;
+  if (!name || !category) {
+    return res.status(400).json({ error: 'Name and category are required' });
+  }
+  const query = 'UPDATE partners SET name = ?, logo_url = ?, category = ?, website_url = ?, description = ? WHERE id = ?';
+  db.query(query, [name, logo_url, category, website_url, description, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Partner updated successfully' });
+  });
+});
+
+// Admin: Delete partner
+app.delete('/api/admin/partners/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM partners WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Partner deleted successfully' });
+  });
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
