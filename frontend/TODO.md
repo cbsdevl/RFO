@@ -1,5 +1,5 @@
-- [x] Adjust logo height to h-12 on mobile and h-20 on desktop
-- [x] Adjust organization name font size to text-lg on mobile and text-2xl on desktop
-- [x] Adjust padding for DONATE NOW and BECOME VOLUNTEER buttons to smaller on mobile
-- [x] Make top bar responsive by using flex-col on small screens and flex-row on larger screens
-- [x] Test the navbar responsiveness on different screen sizes (changes applied, ready for testing)
+# TODO: Make Hero Slide Images Responsive
+
+- [x] Update Hero.jsx image container with responsive min-heights for lg and xl screens
+- [x] Test the responsiveness on different screen sizes (requires running the app)
+- [x] Change slide images to be the background of Hero.jsx
