@@ -26,25 +26,25 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50">
       {/* Top Bar */}
-      <div className="bg-blue-900 text-white flex justify-between items-center px-6 py-2">
+      <div className="bg-blue-900 text-white flex flex-col sm:flex-row justify-between items-center px-6 py-2">
         <div className="flex items-center space-x-4">
           {/* Logo */}
           <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center space-x-2">
-            <img src="/logo.png" alt="Organization Logo" className="h-20 w-auto" />
-            <span className="font-bold text-2xl">Rise Family Organization</span>
+            <img src="/logo.png" alt="Organization Logo" className="h-12 md:h-20 w-auto" />
+            <span className="font-bold text-lg md:text-2xl">Rise Family Organization</span>
           </Link>
           {/* Removed social icons for cleaner design */}
         </div>
-        <div className="flex items-center space-x-4">
-          <Link 
-            to="/donation" 
-            className="bg-yellow-400 text-blue-900 px-5 py-2 rounded hover:bg-yellow-300 font-bold shadow-lg transition duration-300"
+        <div className="flex flex-col space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0 items-center">
+          <Link
+            to="/donation"
+            className="bg-yellow-400 text-blue-900 px-3 py-1 md:px-5 md:py-2 rounded hover:bg-yellow-300 font-bold shadow-lg transition duration-300"
           >
             DONATE NOW
           </Link>
-          <Link 
-            to="/volunteer" 
-            className="bg-white text-blue-900 px-5 py-2 rounded hover:bg-gray-200 font-bold shadow-lg transition duration-300"
+          <Link
+            to="/volunteer"
+            className="bg-white text-blue-900 px-3 py-1 md:px-5 md:py-2 rounded hover:bg-gray-200 font-bold shadow-lg transition duration-300"
           >
             BECOME VOLUNTEER
           </Link>

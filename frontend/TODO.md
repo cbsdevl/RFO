@@ -1,14 +1,5 @@
-# Volunteer Management System Implementation
-
-## Backend Tasks
-- [x] Add volunteer API endpoints in backend/index.js (POST /api/volunteers, GET /api/admin/volunteers, PUT /api/admin/volunteers/:id, DELETE /api/admin/volunteers/:id)
-
-## Frontend Tasks
-- [x] Create VolunteerPage.jsx for public volunteer registration
-- [x] Create AdminVolunteers.jsx for admin volunteer management
-- [x] Add volunteer routes in App.jsx (/volunteer and /admin/volunteers)
-
-## Testing and Verification
-- [ ] Test backend API endpoints
-- [ ] Test frontend pages and integration
-- [ ] Verify responsive design and functionality
+- [x] Adjust logo height to h-12 on mobile and h-20 on desktop
+- [x] Adjust organization name font size to text-lg on mobile and text-2xl on desktop
+- [x] Adjust padding for DONATE NOW and BECOME VOLUNTEER buttons to smaller on mobile
+- [x] Make top bar responsive by using flex-col on small screens and flex-row on larger screens
+- [x] Test the navbar responsiveness on different screen sizes (changes applied, ready for testing)
