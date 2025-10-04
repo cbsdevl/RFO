@@ -20,7 +20,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-blue-700 mt-8 pt-4 text-center">
-          <p>&copy; 2025 Rise Family Organization. All rights reserved.</p>
+          <p>&copy; 2025 Rise Family Organization. Designed|Developed by CBS.</p>
         </div>
       </div>
     </footer>
