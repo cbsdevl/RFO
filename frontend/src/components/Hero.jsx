@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaHandHoldingHeart } from 'react-icons/fa';
 
 export default function Hero() {
@@ -9,6 +10,8 @@ export default function Hero() {
   const [titleVisible, setTitleVisible] = useState(false);
   const [paraVisible, setParaVisible] = useState(false);
   const [buttonVisible, setButtonVisible] = useState(false);
+
+  const navigate = useNavigate();
 
   const images = ['/garuka1.jpg', '/garuka2.jpg', '/garuka3.jpg', '/garuka4.jpg', '/hero-bg.JPG'];
 
@@ -99,6 +102,7 @@ export default function Hero() {
           <button
             className={`inline-flex items-center space-x-2 sm:space-x-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 font-bold px-6 py-2 sm:px-8 sm:py-3 rounded-full shadow-lg hover:from-yellow-500 hover:to-yellow-600 hover:scale-105 transform transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-yellow-300 transition-all duration-1000 text-sm sm:text-base ${buttonVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
             aria-label="Donate Now"
+            onClick={() => navigate('/donation')}
           >
             <FaHandHoldingHeart className="text-lg sm:text-xl" />
             <span>Donate Now</span>

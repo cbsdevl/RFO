@@ -15,6 +15,8 @@ const LazyAdminContactMessages = lazy(() => import('./pages/AdminContactMessages
 const LazyAdminTestimonials = lazy(() => import('./pages/AdminTestimonials').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h2>Loading Testimonials...</h2></div> })));
 const LazyAdminPartners = lazy(() => import('./pages/AdminPartners').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h2>Loading Partners...</h2></div> })));
 const LazyAdminVolunteers = lazy(() => import('./pages/AdminVolunteers').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h2>Loading Volunteers...</h2></div> })));
+const LazyAdminSponsorProjects = lazy(() => import('./pages/AdminSponsorProjects').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>Loading Sponsor Projects...</h3></div> })));
+const LazyAdminSponsors = lazy(() => import('./pages/AdminSponsors').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>Loading Sponsors...</h3></div> })));
 
 // Public lazy imports with fallbacks (fixes "About is not defined" and similar)
 const LazyNavbar = lazy(() => import('./components/Navbar').catch(() => ({ default: () => <nav style={{ backgroundColor: 'blue', color: 'white', padding: '1rem', textAlign: 'center' }}><h3>Navbar Placeholder</h3></nav> })));
@@ -43,6 +45,7 @@ const LazyProgramEmployment = lazy(() => import('./pages/ProgramEmployment').cat
 const LazyNewsPage = lazy(() => import('./pages/NewsPage').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>News Page Placeholder</h3></div> })));
 const LazyNewsArticle = lazy(() => import('./pages/NewsArticle').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>News Article Placeholder</h3></div> })));
 const LazyVolunteerPage = lazy(() => import('./pages/VolunteerPage').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>Volunteer Page Placeholder</h3></div> })));
+const LazySponsorProjects = lazy(() => import('./pages/SponsorProjects').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>Sponsor Projects Placeholder</h3></div> })));
 const LazyPublicLayout = lazy(() => import('./components/PublicLayout').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>Public Layout Placeholder</h3></div> })));
 const LazyFooter = lazy(() => import('./components/Footer').catch(() => ({ default: () => <footer style={{ backgroundColor: 'darkblue', color: 'white', padding: '1rem', textAlign: 'center' }}><p>Footer Placeholder</p></footer> })));
 
@@ -139,13 +142,6 @@ function App() {
                   </Suspense>
                 </PublicPage>
               } />
-              <Route path="/vision" element={
-                <PublicPage>
-                <Suspense fallback={<div className="py-10 text-center">Loading Vision Page...</div>}>
-                  <LazyVisionMissionPage />
-                </Suspense>
-                </PublicPage>
-              } />
               <Route path="/about" element={
                 <PublicPage>
                 <Suspense fallback={<div className="py-10 text-center">Loading About Page...</div>}>
@@ -153,17 +149,17 @@ function App() {
                 </Suspense>
                 </PublicPage>
               } />
-              <Route path="/programs" element={
-                <PublicPage>
-                  <Suspense fallback={<div className="py-10 text-center">Loading Programs Route...</div>}>
-                    <LazyPrograms />
-                  </Suspense>
-                </PublicPage>
-              } />
               <Route path="/donation" element={
                 <PublicPage>
                 <Suspense fallback={<div className="py-10 text-center">Loading Donation Page...</div>}>
                   <LazyDonationPage />
+                </Suspense>
+                </PublicPage>
+              } />
+              <Route path="/sponsor-projects" element={
+                <PublicPage>
+                <Suspense fallback={<div className="py-10 text-center">Loading Sponsor Projects...</div>}>
+                  <LazySponsorProjects />
                 </Suspense>
                 </PublicPage>
               } />
@@ -199,34 +195,6 @@ function App() {
                 <PublicPage>
                   <Suspense fallback={<div className="py-10 text-center">Loading Account...</div>}>
                     <LazyAccount />
-                  </Suspense>
-                </PublicPage>
-              } />
-              <Route path="/programs/talent" element={
-                <PublicPage>
-                  <Suspense fallback={<div className="py-10 text-center">Loading Talent Program...</div>}>
-                    <LazyProgramTalent />
-                  </Suspense>
-                </PublicPage>
-              } />
-              <Route path="/programs/health" element={
-                <PublicPage>
-                  <Suspense fallback={<div className="py-10 text-center">Loading Health Program...</div>}>
-                    <LazyProgramHealth />
-                  </Suspense>
-                </PublicPage>
-              } />
-              <Route path="/programs/education" element={
-                <PublicPage>
-                  <Suspense fallback={<div className="py-10 text-center">Loading Education Program...</div>}>
-                    <LazyProgramEducation />
-                  </Suspense>
-                </PublicPage>
-              } />
-              <Route path="/programs/employment" element={
-                <PublicPage>
-                  <Suspense fallback={<div className="py-10 text-center">Loading Employment Program...</div>}>
-                    <LazyProgramEmployment />
                   </Suspense>
                 </PublicPage>
               } />
@@ -304,6 +272,16 @@ function App() {
                 <Route path="volunteers" element={
                   <Suspense fallback={<div className="py-10 text-center">Loading Volunteers...</div>}>
                     <LazyAdminVolunteers />
+                  </Suspense>
+                } />
+                <Route path="sponsor-projects" element={
+                  <Suspense fallback={<div className="py-10 text-center">Loading Sponsor Projects...</div>}>
+                    <LazyAdminSponsorProjects />
+                  </Suspense>
+                } />
+                <Route path="sponsors" element={
+                  <Suspense fallback={<div className="py-10 text-center">Loading Sponsors...</div>}>
+                    <LazyAdminSponsors />
                   </Suspense>
                 } />
                </Route>

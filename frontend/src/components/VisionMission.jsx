@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { FaLightbulb, FaCrosshairs, FaBullseye, FaCheck, FaArrowRight } from 'react-icons/fa';
-import BackButton from './BackButton';
 
 export default function VisionMission() {
   const [activeTab, setActiveTab] = useState('vision');

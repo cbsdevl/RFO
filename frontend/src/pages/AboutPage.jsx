@@ -12,6 +12,8 @@ import {
   FaAward,
   FaGlobe
 } from 'react-icons/fa';
+import VisionMission from '../components/VisionMission';
+import Programs from '../components/Programs';
 
 export default function AboutPage() {
   const [isVisible, setIsVisible] = useState(false);
@@ -140,6 +142,12 @@ export default function AboutPage() {
               ))}
             </div>
           </div>
+
+          {/* Vision, Mission & Goals */}
+          <VisionMission />
+
+          {/* Our Programs */}
+          <Programs />
 
           {/* Contact Information */}
           <div className="bg-white rounded-xl shadow-lg p-8">

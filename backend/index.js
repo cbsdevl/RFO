@@ -41,6 +41,17 @@ const newsStorage = multer.diskStorage({
 });
 const uploadNews = multer({ storage: newsStorage });
 
+// Multer setup for sponsor project image uploads
+const sponsorProjectStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/sponsor-project-images/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const uploadSponsorProject = multer({ storage: sponsorProjectStorage });
+
 // MySQL connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
@@ -684,6 +695,229 @@ app.delete('/api/admin/partners/:id', authenticateToken, (req, res) => {
   db.query(query, [id], (err, result) => {
     if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
     res.json({ message: 'Partner deleted successfully' });
+  });
+});
+
+// Public: Get all sponsor projects
+app.get('/api/sponsor-projects', (req, res) => {
+  const query = `
+    SELECT sp.*,
+           COALESCE(SUM(s.sponsorship_amount), 0) as current_funding,
+           (COALESCE(SUM(s.sponsorship_amount), 0) / sp.funding_goal) * 100 as progress_percentage,
+           COUNT(s.id) as sponsor_count
+    FROM sponsor_projects sp
+    LEFT JOIN sponsors s ON sp.id = s.project_id AND s.status = 'approved'
+    WHERE sp.status = 'active'
+    GROUP BY sp.id
+    ORDER BY sp.created_at DESC
+  `;
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Public: Get single sponsor project
+app.get('/api/sponsor-projects/:id', (req, res) => {
+  const { id } = req.params;
+  const query = `
+    SELECT sp.*,
+           COALESCE(SUM(s.sponsorship_amount), 0) as current_funding,
+           (COALESCE(SUM(s.sponsorship_amount), 0) / sp.funding_goal) * 100 as progress_percentage,
+           COUNT(s.id) as sponsor_count
+    FROM sponsor_projects sp
+    LEFT JOIN sponsors s ON sp.id = s.project_id AND s.status = 'approved'
+    WHERE sp.id = ? AND sp.status = 'active'
+    GROUP BY sp.id
+  `;
+  db.query(query, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Project not found' });
+    res.json(results[0]);
+  });
+});
+
+// Public: Submit sponsorship
+app.post('/api/sponsor', (req, res) => {
+  const { full_name, organization, email, phone, address, sponsorship_amount, project_id, sponsorship_type, payment_method, message } = req.body;
+  if (!full_name || !email || !sponsorship_amount || !project_id) {
+    return res.status(400).json({ error: 'Full name, email, sponsorship amount, and project are required' });
+  }
+  const query = 'INSERT INTO sponsors (full_name, organization, email, phone, address, sponsorship_amount, project_id, sponsorship_type, payment_method, message, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending")';
+  db.query(query, [full_name, organization, email, phone, address, parseFloat(sponsorship_amount), project_id, sponsorship_type, payment_method, message], (err, result) => {
+    if (err) {
+      console.error('Error submitting sponsorship:', err);
+      return res.status(500).json({ error: 'Failed to submit sponsorship' });
+    }
+    res.json({ message: 'Sponsorship submitted successfully. We will contact you soon for payment confirmation.' });
+  });
+});
+
+// Admin: Get all sponsor projects (admin view)
+app.get('/api/admin/sponsor-projects', authenticateToken, (req, res) => {
+  const { status, search, page = 1, limit = 10 } = req.query;
+  let baseQuery = `
+    SELECT sp.*,
+           COALESCE(SUM(s.sponsorship_amount), 0) as current_funding,
+           (COALESCE(SUM(s.sponsorship_amount), 0) / sp.funding_goal) * 100 as progress_percentage,
+           COUNT(s.id) as sponsor_count
+    FROM sponsor_projects sp
+    LEFT JOIN sponsors s ON sp.id = s.project_id AND s.status = 'approved'
+  `;
+  let whereClause = [];
+  let params = [];
+
+  if (status) {
+    whereClause.push('sp.status = ?');
+    params.push(status);
+  }
+  if (search) {
+    whereClause.push('(sp.name LIKE ? OR sp.description LIKE ? OR sp.location LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  const groupBy = ' GROUP BY sp.id';
+  const fullQuery = baseQuery + (whereClause.length ? ' WHERE ' + whereClause.join(' AND ') : '') + groupBy + ' ORDER BY sp.created_at DESC LIMIT ? OFFSET ?';
+  params.push(parseInt(limit), (page - 1) * limit);
+
+  db.query(fullQuery, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Create sponsor project
+app.post('/api/admin/sponsor-projects', authenticateToken, uploadSponsorProject.single('image'), (req, res) => {
+  const { name, description, funding_goal, location, category, start_date, end_date, contact_person, contact_email, contact_phone, image_url } = req.body;
+  const uploaded_image_url = req.file ? `/uploads/sponsor-project-images/${req.file.filename}` : image_url;
+  if (!name || !funding_goal) {
+    return res.status(400).json({ error: 'Name and funding goal are required' });
+  }
+  const query = 'INSERT INTO sponsor_projects (name, description, funding_goal, location, category, start_date, end_date, image_url, contact_person, contact_email, contact_phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [name, description, parseFloat(funding_goal), location, category, start_date, end_date, uploaded_image_url, contact_person, contact_email, contact_phone], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Sponsor project created successfully', id: result.insertId });
+  });
+});
+
+// Admin: Update sponsor project
+app.put('/api/admin/sponsor-projects/:id', authenticateToken, uploadSponsorProject.single('image'), (req, res) => {
+  const { id } = req.params;
+  const { name, description, funding_goal, location, category, status, start_date, end_date, contact_person, contact_email, contact_phone, image_url } = req.body;
+  const uploaded_image_url = req.file ? `/uploads/sponsor-project-images/${req.file.filename}` : image_url;
+  if (!name || !funding_goal) {
+    return res.status(400).json({ error: 'Name and funding goal are required' });
+  }
+  let query = 'UPDATE sponsor_projects SET name = ?, description = ?, funding_goal = ?, location = ?, category = ?, status = ?, start_date = ?, end_date = ?, contact_person = ?, contact_email = ?, contact_phone = ?';
+  let params = [name, description, parseFloat(funding_goal), location, category, status, start_date, end_date, contact_person, contact_email, contact_phone];
+  if (uploaded_image_url !== undefined) {
+    query += ', image_url = ?';
+    params.push(uploaded_image_url);
+  }
+  query += ' WHERE id = ?';
+  params.push(id);
+  db.query(query, params, (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Sponsor project updated successfully' });
+  });
+});
+
+// Admin: Delete sponsor project
+app.delete('/api/admin/sponsor-projects/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM sponsor_projects WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Sponsor project deleted successfully' });
+  });
+});
+
+// Admin: Get all sponsors (admin view)
+app.get('/api/admin/sponsors', authenticateToken, (req, res) => {
+  const { status, search, page = 1, limit = 10 } = req.query;
+  let baseQuery = `
+    SELECT s.*,
+           sp.name as project_name,
+           sp.category as project_category
+    FROM sponsors s
+    LEFT JOIN sponsor_projects sp ON s.project_id = sp.id
+  `;
+  let whereClause = [];
+  let params = [];
+
+  if (status) {
+    whereClause.push('s.status = ?');
+    params.push(status);
+  }
+  if (search) {
+    whereClause.push('(s.full_name LIKE ? OR s.email LIKE ? OR s.organization LIKE ? OR sp.name LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  const fullQuery = baseQuery + (whereClause.length ? ' WHERE ' + whereClause.join(' AND ') : '') + ' ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+  params.push(parseInt(limit), (page - 1) * limit);
+
+  db.query(fullQuery, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Update sponsor status
+app.put('/api/admin/sponsors/:id/status', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!['pending', 'approved', 'completed'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  const query = 'UPDATE sponsors SET status = ? WHERE id = ?';
+  db.query(query, [status, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Sponsor status updated successfully' });
+  });
+});
+
+// Admin: Delete sponsor
+app.delete('/api/admin/sponsors/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM sponsors WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Sponsor deleted successfully' });
+  });
+});
+
+// Create sponsor projects table (one-time setup)
+app.post('/api/setup-sponsor-projects-table', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  const sqlFile = path.join(__dirname, 'create_sponsor_projects_table.sql');
+  const sql = fs.readFileSync(sqlFile, 'utf8');
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('Error creating sponsor projects table:', err);
+      return res.status(500).json({ error: 'Failed to create sponsor projects table' });
+    }
+    res.json({ message: 'Sponsor projects table created successfully with sample data' });
+  });
+});
+
+// Create sponsors table (one-time setup)
+app.post('/api/setup-sponsors-table', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  const sqlFile = path.join(__dirname, 'create_sponsors_table.sql');
+  const sql = fs.readFileSync(sqlFile, 'utf8');
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('Error creating sponsors table:', err);
+      return res.status(500).json({ error: 'Failed to create sponsors table' });
+    }
+    res.json({ message: 'Sponsors table created successfully with sample data' });
   });
 });
 
