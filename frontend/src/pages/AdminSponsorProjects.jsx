@@ -12,6 +12,7 @@ export default function AdminSponsorProjects() {
     name: '',
     description: '',
     funding_goal: '',
+    funding_raised: '',
     location: '',
     category: '',
     start_date: '',
@@ -63,12 +64,18 @@ export default function AdminSponsorProjects() {
     const token = localStorage.getItem('adminToken');
 
     try {
+      // If status is completed, set funding_raised to funding_goal
+      const updatedFormData = { ...formData };
+      if (updatedFormData.status === 'completed') {
+        updatedFormData.funding_raised = updatedFormData.funding_goal;
+      }
+
       const submitData = new FormData();
 
       // Add all form fields to FormData
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== null && formData[key] !== undefined) {
-          submitData.append(key, formData[key]);
+      Object.keys(updatedFormData).forEach(key => {
+        if (updatedFormData[key] !== null && updatedFormData[key] !== undefined) {
+          submitData.append(key, updatedFormData[key]);
         }
       });
 
@@ -86,20 +93,21 @@ export default function AdminSponsorProjects() {
           await fetchProjects(); // Refresh the list
           setShowForm(false);
           setEditingProject(null);
-          setFormData({
-            name: '',
-            description: '',
-            funding_goal: '',
-            location: '',
-            category: '',
-            start_date: '',
-            end_date: '',
-            contact_person: '',
-            contact_email: '',
-            contact_phone: '',
-            status: 'active',
-            image: null
-          });
+                  setFormData({
+                    name: '',
+                    description: '',
+                    funding_goal: '',
+                    funding_raised: '',
+                    location: '',
+                    category: '',
+                    start_date: '',
+                    end_date: '',
+                    contact_person: '',
+                    contact_email: '',
+                    contact_phone: '',
+                    status: 'active',
+                    image: null
+                  });
         } else {
           console.error('Failed to update project');
         }
@@ -116,20 +124,21 @@ export default function AdminSponsorProjects() {
         if (response.ok) {
           await fetchProjects(); // Refresh the list
           setShowForm(false);
-          setFormData({
-            name: '',
-            description: '',
-            funding_goal: '',
-            location: '',
-            category: '',
-            start_date: '',
-            end_date: '',
-            contact_person: '',
-            contact_email: '',
-            contact_phone: '',
-            status: 'active',
-            image: null
-          });
+                  setFormData({
+                    name: '',
+                    description: '',
+                    funding_goal: '',
+                    funding_raised: '',
+                    location: '',
+                    category: '',
+                    start_date: '',
+                    end_date: '',
+                    contact_person: '',
+                    contact_email: '',
+                    contact_phone: '',
+                    status: 'active',
+                    image: null
+                  });
         } else {
           console.error('Failed to create project');
         }
@@ -384,6 +393,7 @@ export default function AdminSponsorProjects() {
                     name: '',
                     description: '',
                     funding_goal: '',
+                    funding_raised: '',
                     location: '',
                     category: '',
                     start_date: '',
@@ -439,13 +449,24 @@ export default function AdminSponsorProjects() {
                 ></textarea>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Funding Goal ($)</label>
                   <input
                     type="number"
                     name="funding_goal"
                     value={formData.funding_goal}
+                    onChange={handleFormChange}
+                    min="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Funding Raised ($)</label>
+                  <input
+                    type="number"
+                    name="funding_raised"
+                    value={formData.funding_raised}
                     onChange={handleFormChange}
                     min="0"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -567,6 +588,21 @@ export default function AdminSponsorProjects() {
                   onClick={() => {
                     setShowForm(false);
                     setEditingProject(null);
+                    setFormData({
+                      name: '',
+                      description: '',
+                      funding_goal: '',
+                      funding_raised: '',
+                      location: '',
+                      category: '',
+                      start_date: '',
+                      end_date: '',
+                      contact_person: '',
+                      contact_email: '',
+                      contact_phone: '',
+                      status: 'active',
+                      image: null
+                    });
                   }}
                   className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >

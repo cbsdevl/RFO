@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useContext } from 'react'; // For lazy loading with fallbacks
 import { AdminAuthProvider, AdminAuthContext } from './context/AdminAuthContext'; // Admin auth context
+import { ToastProvider } from './context/ToastContext'; // Toast context
 import ErrorBoundary from './components/ErrorBoundary'; // Error boundary
 
 // Admin lazy imports with fallbacks (prevents import crashes)
@@ -117,11 +118,12 @@ function PublicPage({ children }) {
   );
 }
 
-// App (AdminAuthProvider wraps Router - balanced nesting)
+// App (AdminAuthProvider and ToastProvider wrap Router - balanced nesting)
 function App() {
   return (
     <AdminAuthProvider>
-      <Router>
+      <ToastProvider>
+        <Router>
         <div className="min-h-screen bg-white">
           <ErrorBoundary fallback={
             <div className="text-center py-10 bg-red-50 border border-red-200 rounded p-4">
@@ -300,6 +302,7 @@ function App() {
           </Suspense>
         </div>
       </Router>
+      </ToastProvider>
     </AdminAuthProvider>
   );
 }

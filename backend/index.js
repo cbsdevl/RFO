@@ -6,9 +6,21 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
+const nodemailer = require('nodemailer');
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Email transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: process.env.EMAIL_PORT || 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 const app = express();
 
@@ -498,6 +510,28 @@ app.put('/api/admin/volunteers/:id/status', authenticateToken, (req, res) => {
   const query = 'UPDATE volunteers SET status = ? WHERE id = ?';
   db.query(query, [status, id], (err, result) => {
     if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    if (status === 'approved') {
+      // Send email
+      const getEmailQuery = 'SELECT email, full_name FROM volunteers WHERE id = ?';
+      db.query(getEmailQuery, [id], (emailErr, emailResult) => {
+        if (!emailErr && emailResult.length > 0) {
+          const volunteer = emailResult[0];
+          const mailOptions = {
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: volunteer.email,
+            subject: 'Volunteer Application Approved',
+            text: `Dear ${volunteer.full_name},\n\nCongratulations! Your volunteer application has been approved. We are excited to have you join our team.\n\nBest regards,\nRFO Team`
+          };
+          transporter.sendMail(mailOptions, (mailErr, info) => {
+            if (mailErr) {
+              console.error('Error sending email:', mailErr);
+            } else {
+              console.log('Email sent:', info.response);
+            }
+          });
+        }
+      });
+    }
     res.json({ message: 'Status updated successfully' });
   });
 });
@@ -702,8 +736,8 @@ app.delete('/api/admin/partners/:id', authenticateToken, (req, res) => {
 app.get('/api/sponsor-projects', (req, res) => {
   const query = `
     SELECT sp.*,
-           COALESCE(SUM(s.sponsorship_amount), 0) as current_funding,
-           (COALESCE(SUM(s.sponsorship_amount), 0) / sp.funding_goal) * 100 as progress_percentage,
+           CASE WHEN sp.status = 'completed' THEN sp.funding_goal ELSE COALESCE(SUM(s.sponsorship_amount), 0) END as current_funding,
+           (CASE WHEN sp.status = 'completed' THEN sp.funding_goal ELSE COALESCE(SUM(s.sponsorship_amount), 0) END / sp.funding_goal) * 100 as progress_percentage,
            COUNT(s.id) as sponsor_count
     FROM sponsor_projects sp
     LEFT JOIN sponsors s ON sp.id = s.project_id AND s.status = 'approved'
@@ -803,13 +837,13 @@ app.post('/api/admin/sponsor-projects', authenticateToken, uploadSponsorProject.
 // Admin: Update sponsor project
 app.put('/api/admin/sponsor-projects/:id', authenticateToken, uploadSponsorProject.single('image'), (req, res) => {
   const { id } = req.params;
-  const { name, description, funding_goal, location, category, status, start_date, end_date, contact_person, contact_email, contact_phone, image_url } = req.body;
+  const { name, description, funding_goal, funding_raised, location, category, status, start_date, end_date, contact_person, contact_email, contact_phone, image_url } = req.body;
   const uploaded_image_url = req.file ? `/uploads/sponsor-project-images/${req.file.filename}` : image_url;
   if (!name || !funding_goal) {
     return res.status(400).json({ error: 'Name and funding goal are required' });
   }
-  let query = 'UPDATE sponsor_projects SET name = ?, description = ?, funding_goal = ?, location = ?, category = ?, status = ?, start_date = ?, end_date = ?, contact_person = ?, contact_email = ?, contact_phone = ?';
-  let params = [name, description, parseFloat(funding_goal), location, category, status, start_date, end_date, contact_person, contact_email, contact_phone];
+  let query = 'UPDATE sponsor_projects SET name = ?, description = ?, funding_goal = ?, current_funding = ?, location = ?, category = ?, status = ?, start_date = ?, end_date = ?, contact_person = ?, contact_email = ?, contact_phone = ?';
+  let params = [name, description, parseFloat(funding_goal), parseFloat(funding_raised || 0), location, category, status, start_date, end_date, contact_person, contact_email, contact_phone];
   if (uploaded_image_url !== undefined) {
     query += ', image_url = ?';
     params.push(uploaded_image_url);
@@ -873,7 +907,21 @@ app.put('/api/admin/sponsors/:id/status', authenticateToken, (req, res) => {
   const query = 'UPDATE sponsors SET status = ? WHERE id = ?';
   db.query(query, [status, id], (err, result) => {
     if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
-    res.json({ message: 'Sponsor status updated successfully' });
+    // If approved, update project funding
+    if (status === 'approved') {
+      const getSponsorQuery = 'SELECT project_id, sponsorship_amount FROM sponsors WHERE id = ?';
+      db.query(getSponsorQuery, [id], (getErr, getResult) => {
+        if (getErr) return res.status(500).json({ error: 'Failed to get sponsor details' });
+        const { project_id, sponsorship_amount } = getResult[0];
+        const updateProjectQuery = 'UPDATE sponsor_projects SET current_funding = current_funding + ? WHERE id = ?';
+        db.query(updateProjectQuery, [sponsorship_amount, project_id], (updateErr, updateResult) => {
+          if (updateErr) return res.status(500).json({ error: 'Failed to update project funding' });
+          res.json({ message: 'Sponsor status updated successfully and project funding updated' });
+        });
+      });
+    } else {
+      res.json({ message: 'Sponsor status updated successfully' });
+    }
   });
 });
 

@@ -37,6 +37,7 @@ export default function AdminLayout() {
             <Link to="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Dashboard</Link>
             <Link to="/admin/donations" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Donations</Link>
             <Link to="/admin/help-requests" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Help Requests</Link>
+            <Link to="/admin/volunteers" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Volunteers</Link>
             <Link to="/admin/child-needs" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Child Needs</Link>
             <Link to="/admin/news" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>News</Link>
             <Link to="/admin/contact-messages" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Contact Messages</Link>
