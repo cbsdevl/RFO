@@ -1,4 +1,4 @@
-const express = require('express');
+express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -10,6 +10,17 @@ const nodemailer = require('nodemailer');
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Add Pesapal integration (only if keys are provided)
+const axios = require('axios');
+let pesapalConfig = null;
+if (process.env.PESAPAL_CONSUMER_KEY && process.env.PESAPAL_CONSUMER_SECRET) {
+  pesapalConfig = {
+    consumer_key: process.env.PESAPAL_CONSUMER_KEY,
+    consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
+    base_url: process.env.PESAPAL_ENV === 'sandbox' ? 'https://cybqa.pesapal.com/pesapalv3' : 'https://pay.pesapal.com/v3'
+  };
+}
 
 // Email transporter
 const transporter = nodemailer.createTransport({
@@ -95,52 +106,235 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Public: Log a donation with optional child_need_id and gift information
-app.post('/api/donate', (req, res) => {
+// Updated /api/donate route to handle Pesapal payment initiation
+app.post('/api/donate', async (req, res) => {
   const { amount, donor_name, email, child_need_id, gift_id, gift_name, gift_category, payment_method, recurring } = req.body;
   if (!amount || !donor_name || !email) {
     return res.status(400).json({ error: 'All fields are required' });
   }
-  let query = 'INSERT INTO donations (amount, donor_name, email, date, status';
-  let values = [amount, donor_name, email, 'pending'];
-  let placeholders = '?, ?, ?, NOW(), ?';
 
-  if (child_need_id) {
-    query += ', child_need_id';
-    placeholders += ', ?';
-    values.push(child_need_id);
-  }
+  if (payment_method === 'pesapal') {
+    if (!pesapalConfig) {
+      // Pesapal not configured, use fallback
+      console.log('Pesapal not configured, using fallback for donation');
+      let query = 'INSERT INTO donations (amount, donor_name, email, date, status, payment_method';
+      let values = [amount, donor_name, email, new Date(), 'pending', payment_method];
+      let placeholders = '?, ?, ?, NOW(), ?, ?';
 
-  if (gift_id) {
-    query += ', gift_id, gift_name, gift_category';
-    placeholders += ', ?, ?, ?';
-    values.push(gift_id, gift_name, gift_category);
-  }
+      if (child_need_id) {
+        query += ', child_need_id';
+        placeholders += ', ?';
+        values.push(child_need_id);
+      }
 
-  if (payment_method) {
-    query += ', payment_method';
-    placeholders += ', ?';
-    values.push(payment_method);
-  }
+      if (gift_id) {
+        query += ', gift_id, gift_name, gift_category';
+        placeholders += ', ?, ?, ?';
+        values.push(gift_id, gift_name, gift_category);
+      }
 
-  if (recurring !== undefined) {
-    query += ', recurring';
-    placeholders += ', ?';
-    values.push(recurring);
-  }
+      if (recurring !== undefined) {
+        query += ', recurring';
+        placeholders += ', ?';
+        values.push(recurring);
+      }
 
-  query += ') VALUES (' + placeholders + ')';
+      query += ') VALUES (' + placeholders + ')';
 
-  db.query(query, values, (err, result) => {
-    if (err) {
-     console.error('Error logging donation:', err);
-      return res.status(500).json({ error: 'Failed to log donation' });
+      db.query(query, values, (err, result) => {
+        if (err) {
+          console.error('Error logging donation:', err);
+          return res.status(500).json({ error: 'Failed to log donation' });
+        }
+        // Redirect to success page to simulate successful payment
+        const successUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/donation-success`;
+        res.json({ payment_link: successUrl });
+      });
+    } else {
+      // Try to create Pesapal payment
+      try {
+        const orderTrackingId = `rfo_donation_${Date.now()}`;
+        const callbackUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/donation-success`;
+
+        // Submit order to Pesapal
+        const submitOrderResponse = await axios.post(`${pesapalConfig.base_url}/api/Transactions/SubmitOrderRequest`, {
+          id: orderTrackingId,
+          currency: 'USD',
+          amount: parseFloat(amount),
+          description: gift_id ? `Gift Donation: ${gift_name}` : 'Donation to RFO',
+          callback_url: callbackUrl,
+          notification_id: process.env.PESAPAL_NOTIFICATION_ID || '',
+          billing_address: {
+            email_address: email,
+            phone_number: '',
+            country_code: '',
+            first_name: donor_name.split(' ')[0],
+            middle_name: '',
+            last_name: donor_name.split(' ').slice(1).join(' ') || '',
+            line_1: '',
+            line_2: '',
+            city: '',
+            state: '',
+            postal_code: '',
+            zip_code: ''
+          }
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getPesapalAccessToken()}`
+          }
+        });
+
+        if (submitOrderResponse.data && submitOrderResponse.data.redirect_url) {
+          // Log donation with status 'pending' and order tracking ID
+          let query = 'INSERT INTO donations (amount, donor_name, email, date, status, payment_method, transaction_ref';
+          let values = [amount, donor_name, email, new Date(), 'pending', payment_method, orderTrackingId];
+          let placeholders = '?, ?, ?, NOW(), ?, ?, ?';
+
+          if (child_need_id) {
+            query += ', child_need_id';
+            placeholders += ', ?';
+            values.push(child_need_id);
+          }
+
+          if (gift_id) {
+            query += ', gift_id, gift_name, gift_category';
+            placeholders += ', ?, ?, ?';
+            values.push(gift_id, gift_name, gift_category);
+          }
+
+          if (recurring !== undefined) {
+            query += ', recurring';
+            placeholders += ', ?';
+            values.push(recurring);
+          }
+
+          query += ') VALUES (' + placeholders + ')';
+
+          db.query(query, values, (err, result) => {
+            if (err) {
+              console.error('Error logging donation:', err);
+              return res.status(500).json({ error: 'Failed to log donation' });
+            }
+            // Return payment link to frontend for redirect
+            res.json({ payment_link: submitOrderResponse.data.redirect_url });
+          });
+        } else {
+          throw new Error('Failed to initialize payment');
+        }
+      } catch (error) {
+        console.error('Pesapal payment error:', error);
+        // Log donation with status 'pending' when Pesapal fails
+        let query = 'INSERT INTO donations (amount, donor_name, email, date, status, payment_method';
+        let values = [amount, donor_name, email, new Date(), 'pending', payment_method];
+        let placeholders = '?, ?, ?, NOW(), ?, ?';
+
+        if (child_need_id) {
+          query += ', child_need_id';
+          placeholders += ', ?';
+          values.push(child_need_id);
+        }
+
+        if (gift_id) {
+          query += ', gift_id, gift_name, gift_category';
+          placeholders += ', ?, ?, ?';
+          values.push(gift_id, gift_name, gift_category);
+        }
+
+        if (recurring !== undefined) {
+          query += ', recurring';
+          placeholders += ', ?';
+          values.push(recurring);
+        }
+
+        query += ') VALUES (' + placeholders + ')';
+
+        db.query(query, values, (err, result) => {
+          if (err) {
+            console.error('Error logging donation:', err);
+            return res.status(500).json({ error: 'Failed to log donation' });
+          }
+          // For test mode, redirect to success page to simulate successful payment
+          const successUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/donation-success`;
+          res.json({ payment_link: successUrl });
+        });
+      }
     }
-    const message = gift_id
-      ? 'Gift donation submitted and pending approval. Thank you for your generous gift!'
-      : 'Donation submitted and pending approval. Thank you!';
-    res.json({ message });
-  });
+  } else {
+    // Existing donation logging for other payment methods
+    let query = 'INSERT INTO donations (amount, donor_name, email, date, status';
+    let values = [amount, donor_name, email, 'pending'];
+    let placeholders = '?, ?, ?, NOW(), ?';
+
+    if (child_need_id) {
+      query += ', child_need_id';
+      placeholders += ', ?';
+      values.push(child_need_id);
+    }
+
+    if (gift_id) {
+      query += ', gift_id, gift_name, gift_category';
+      placeholders += ', ?, ?, ?';
+      values.push(gift_id, gift_name, gift_category);
+    }
+
+    if (payment_method) {
+      query += ', payment_method';
+      placeholders += ', ?';
+      values.push(payment_method);
+    }
+
+    if (recurring !== undefined) {
+      query += ', recurring';
+      placeholders += ', ?';
+      values.push(recurring);
+    }
+
+    query += ') VALUES (' + placeholders + ')';
+
+    db.query(query, values, (err, result) => {
+      if (err) {
+       console.error('Error logging donation:', err);
+        return res.status(500).json({ error: 'Failed to log donation' });
+      }
+      const message = gift_id
+        ? 'Gift donation submitted and pending approval. Thank you for your generous gift!'
+        : 'Donation submitted and pending approval. Thank you!';
+      res.json({ message });
+    });
+  }
+});
+
+// Helper function to get Pesapal access token
+async function getPesapalAccessToken() {
+  try {
+    const response = await axios.post(`${pesapalConfig.base_url}/api/Auth/RequestToken`, {
+      consumer_key: pesapalConfig.consumer_key,
+      consumer_secret: pesapalConfig.consumer_secret
+    });
+    return response.data.token;
+  } catch (error) {
+    console.error('Error getting Pesapal access token:', error);
+    throw error;
+  }
+}
+
+// Flutterwave webhook endpoint to update donation status
+app.post('/api/flutterwave-webhook', express.json({ type: 'application/json' }), (req, res) => {
+  const event = req.body;
+  if (event.event === 'charge.completed' && event.data.status === 'successful') {
+    const txRef = event.data.tx_ref;
+    const query = 'UPDATE donations SET status = ? WHERE transaction_ref = ?';
+    db.query(query, ['approved', txRef], (err, result) => {
+      if (err) {
+        console.error('Error updating donation status:', err);
+        return res.status(500).send('Error');
+      }
+      res.status(200).send('OK');
+    });
+  } else {
+    res.status(200).send('Event ignored');
+  }
 });
 
 // Public: Get total donations

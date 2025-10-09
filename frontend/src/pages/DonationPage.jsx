@@ -131,6 +131,13 @@ export default function DonationPage() {
       });
       if (!res.ok) throw new Error('Failed to submit donation');
       const data = await res.json();
+
+      if (paymentMethod === 'pesapal' && data.payment_link) {
+        // Redirect to Pesapal payment page
+        window.location.href = data.payment_link;
+        return; // Don't show success message, as user is redirected
+      }
+
       setSuccess(data.message || 'Donation successful! Thank you for your generosity.');
       setDonationSuccess({
         child: selectedChildNeed,
@@ -199,7 +206,7 @@ export default function DonationPage() {
       {/* Hero Section */}
       <div className="relative h-[50vh] bg-gradient-to-r from-blue-600 to-blue-800">
         <div className="absolute inset-0 bg-black/30" />
-        <div className="relative container mx-auto px-4 h-full flex items-center">
+        <div className="relative w-full px-4 h-full flex items-center">
           <div className="max-w-4xl text-white">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               {gift ? `Donate ${gift.name}` : 'Make a Difference Today'}
@@ -228,7 +235,7 @@ export default function DonationPage() {
 
       {/* Impact Stats */}
       <div className="bg-white py-16">
-        <div className="container mx-auto px-4">
+        <div className="w-full px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {impactStats.map((stat, index) => (
               <div key={index} className="text-center">
@@ -243,8 +250,8 @@ export default function DonationPage() {
 
       {/* Donation Success Message */}
       {donationSuccess && (
-        <div className="container mx-auto px-4 py-16">
-          <Card className="max-w-4xl mx-auto shadow-lg bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+        <div className="w-full px-4 py-16">
+          <Card className="w-full shadow-lg bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
             <CardContent className="p-8 text-center">
               <FaCheck className="text-6xl text-green-600 mx-auto mb-4" />
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Thank You for Your Generous Donation!</h2>
@@ -277,7 +284,7 @@ export default function DonationPage() {
       )}
 
       {/* Children Who Need Help */}
-      <div className="container mx-auto px-4 py-16">
+      <div className="w-full px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Children Who Need Your Help</h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -510,6 +517,19 @@ export default function DonationPage() {
                         <FaMobile className="text-gray-400" />
                         <span>Mobile Money</span>
                       </label>
+                      <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value="pesapal"
+                          checked={paymentMethod === 'pesapal'}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="text-blue-600"
+                          aria-checked={paymentMethod === 'pesapal'}
+                        />
+                        <FaCreditCard className="text-gray-400" />
+                        <span>Visa/Mastercard (Pesapal)</span>
+                      </label>
                     </div>
 
                     <div className="mb-6">
@@ -586,7 +606,7 @@ export default function DonationPage() {
 
       {/* Call to Action */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-16">
-        <div className="container mx-auto px-4 text-center text-white">
+        <div className="w-full px-4 text-center text-white">
           <h3 className="text-2xl md:text-3xl font-bold mb-4">
             Every Dollar Makes a Difference
           </h3>
