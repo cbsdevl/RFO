@@ -14,7 +14,6 @@ export default function SponsorProjects() {
     sponsorship_amount: '',
     message: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
   // Fetch sponsor projects from API
@@ -53,41 +52,29 @@ export default function SponsorProjects() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.sponsorship_amount || !formData.full_name || !formData.email) {
       alert('Please fill in all required fields');
       return;
     }
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('http://localhost:5000/api/sponsor', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          project_id: selectedProject.id
-        }),
-      });
-
-      if (response.ok) {
-        setSuccess(true);
-        setShowForm(false);
-        // Refresh projects to update funding progress
-        fetchProjects();
-      } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message || 'Failed to submit sponsorship'}`);
-      }
-    } catch (error) {
-      console.error('Error submitting sponsorship:', error);
+    // Record the sponsorship in the backend
+    fetch('http://localhost:5000/api/sponsor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...formData,
+        project_id: selectedProject.id
+      }),
+    }).then(() => {
+      // Redirect to payment link
+      window.open('https://store.pesapal.com/rfo', '_blank');
+    }).catch(err => {
+      console.error('Error submitting sponsorship:', err);
       alert('Failed to submit sponsorship. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   const quickAmounts = [100, 500, 1000, 2500];
@@ -345,17 +332,9 @@ export default function SponsorProjects() {
                   <div className="text-center">
                     <button
                       type="submit"
-                      disabled={isSubmitting}
-                      className="bg-green-600 text-white py-4 px-12 rounded-lg hover:bg-green-700 transition-colors font-bold text-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-green-600 text-white py-4 px-12 rounded-lg hover:bg-green-700 transition-colors font-bold text-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                     >
-                      {isSubmitting ? (
-                        <span className="flex items-center justify-center">
-                          <FaCheck className="animate-spin mr-2" />
-                          Processing...
-                        </span>
-                      ) : (
-                        `Sponsor $${formData.sponsorship_amount || '0'} Now`
-                      )}
+                      Sponsor ${formData.sponsorship_amount || '0'} Now
                     </button>
                     <p className="text-sm text-gray-600 mt-3">
                       Your sponsorship will be processed securely. We'll send you a confirmation email.

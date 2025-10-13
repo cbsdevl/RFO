@@ -21,8 +21,7 @@ export default function DonationPage() {
   const [email, setEmail] = useState('');
   const [childNeeds, setChildNeeds] = useState([]);
   const [selectedChildNeed, setSelectedChildNeed] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('card');
-  const [isRecurring, setIsRecurring] = useState(false);
+
 
   // Fetch child needs on component mount
   useEffect(() => {
@@ -35,7 +34,7 @@ export default function DonationPage() {
       .catch(err => console.error('Error fetching child needs:', err));
   }, []);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -81,8 +80,6 @@ export default function DonationPage() {
     setAmount('');
     setName('');
     setEmail('');
-    setPaymentMethod('card');
-    setIsRecurring(false);
     setError('');
     setSuccess('');
     setDonationSuccess(null);
@@ -100,71 +97,34 @@ export default function DonationPage() {
     setSelectedImage(null);
   };
 
-  const handleDonate = async () => {
+  const handleDonate = () => {
     if (!validateStep()) return;
-    setIsSubmitting(true);
-    setError('');
-    setSuccess('');
-    try {
-      const body = {
-        amount: parseFloat(amount),
-        donor_name: name,
-        email,
-        payment_method: paymentMethod,
-        recurring: isRecurring
-      };
+    const body = {
+      amount: parseFloat(amount),
+      donor_name: name,
+      email
+    };
 
-      // Add gift information if donating a gift
-      if (gift) {
-        body.gift_id = gift.id;
-        body.gift_name = gift.name;
-        body.gift_category = gift.category;
-      }
+    // Add gift information if donating a gift
+    if (gift) {
+      body.gift_id = gift.id;
+      body.gift_name = gift.name;
+      body.gift_category = gift.category;
+    }
 
-      if (selectedChildNeed) {
-        body.child_need_id = selectedChildNeed.id;
-      }
-      const res = await fetch('http://localhost:5000/api/donate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error('Failed to submit donation');
-      const data = await res.json();
-
-      if (paymentMethod === 'pesapal' && data.payment_link) {
-        // Redirect to Pesapal payment page
-        window.location.href = data.payment_link;
-        return; // Don't show success message, as user is redirected
-      }
-
-      setSuccess(data.message || 'Donation successful! Thank you for your generosity.');
-      setDonationSuccess({
-        child: selectedChildNeed,
-        amount,
-        name,
-        message: data.message || 'Donation successful! Thank you for your generosity.'
-      });
-      // Reset form
-      setAmount(gift ? gift.price.toString() : '');
-      setName('');
-      setEmail('');
-      setSelectedChildNeed(null);
-      setPaymentMethod('card');
-      setIsRecurring(false);
-      setStep(1);
-      setShowForm(false);
-      // Refresh child needs
-      fetch('http://localhost:5000/api/child-needs')
-        .then(res => res.json())
-        .then(data => setChildNeeds(data))
-        .catch(err => console.error('Error refreshing child needs:', err));
-    } catch (err) {
+    if (selectedChildNeed) {
+      body.child_need_id = selectedChildNeed.id;
+    }
+    fetch('http://localhost:5000/api/donate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(() => {
+      window.location.href = '/thank-you';
+    }).catch(err => {
       console.error('Donation error:', err);
       setError('Unable to process donation. Please check your connection and try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   const impactStats = [
@@ -175,7 +135,7 @@ export default function DonationPage() {
   ];
 
   // Progress bar percentage
-  const progressPercent = (step / 4) * 100;
+  const progressPercent = (step / 3) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -359,7 +319,7 @@ export default function DonationPage() {
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
-                  aria-label={`Step ${step} of 4`}
+                  aria-label={`Step ${step} of 3`}
                 />
               </div>
 
@@ -464,90 +424,6 @@ export default function DonationPage() {
                       <Button variant="outline" onClick={handleBack} aria-label="Back to Choose Amount">
                         Back
                       </Button>
-                      <Button variant="default" onClick={handleNext} aria-label="Next: Payment Method">
-                        Next: Payment Method
-                      </Button>
-                    </div>
-                  </>
-                )}
-
-                {/* Step 3: Payment Method */}
-                {step === 3 && (
-                  <>
-                    <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                      How would you like to pay? <FaLock className="inline text-green-600" title="Secure payment" />
-                    </Label>
-                    <div className="space-y-2 mb-6" role="radiogroup" aria-label="Payment Method">
-                      <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="card"
-                          checked={paymentMethod === 'card'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="text-blue-600"
-                          aria-checked={paymentMethod === 'card'}
-                        />
-                        <FaCreditCard className="text-gray-400" />
-                        <span>Credit/Debit Card</span>
-                      </label>
-                      <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="paypal"
-                          checked={paymentMethod === 'paypal'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="text-blue-600"
-                          aria-checked={paymentMethod === 'paypal'}
-                        />
-                        <FaPaypal className="text-gray-400" />
-                        <span>PayPal</span>
-                      </label>
-                      <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="mobile"
-                          checked={paymentMethod === 'mobile'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="text-blue-600"
-                          aria-checked={paymentMethod === 'mobile'}
-                        />
-                        <FaMobile className="text-gray-400" />
-                        <span>Mobile Money</span>
-                      </label>
-                      <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="pesapal"
-                          checked={paymentMethod === 'pesapal'}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="text-blue-600"
-                          aria-checked={paymentMethod === 'pesapal'}
-                        />
-                        <FaCreditCard className="text-gray-400" />
-                        <span>Visa/Mastercard (Pesapal)</span>
-                      </label>
-                    </div>
-
-                    <div className="mb-6">
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={isRecurring}
-                          onChange={(e) => setIsRecurring(e.target.checked)}
-                          className="text-blue-600 rounded"
-                        />
-                        <span className="text-sm text-gray-700">Make this a monthly recurring donation</span>
-                      </label>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <Button variant="outline" onClick={handleBack} aria-label="Back to Your Details">
-                        Back
-                      </Button>
                       <Button variant="default" onClick={handleNext} aria-label="Next: Review & Donate">
                         Next: Review & Donate
                       </Button>
@@ -555,8 +431,8 @@ export default function DonationPage() {
                   </>
                 )}
 
-                {/* Step 4: Review & Donate */}
-                {step === 4 && (
+                {/* Step 3: Review & Donate */}
+                {step === 3 && (
                   <>
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold mb-2">Review Your Donation</h3>
@@ -564,8 +440,6 @@ export default function DonationPage() {
                         <li><FaCheckCircle className="inline text-green-600 mr-2" /> Amount: ${amount}</li>
                         <li><FaCheckCircle className="inline text-green-600 mr-2" /> Name: {name}</li>
                         <li><FaCheckCircle className="inline text-green-600 mr-2" /> Email: {email}</li>
-                        <li><FaCheckCircle className="inline text-green-600 mr-2" /> Payment Method: {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</li>
-                        <li><FaCheckCircle className="inline text-green-600 mr-2" /> Recurring: {isRecurring ? 'Yes, monthly' : 'No'}</li>
                         <li><FaCheckCircle className="inline text-green-600 mr-2" /> Child: {selectedChildNeed.name}</li>
                       </ul>
                     </div>
@@ -582,18 +456,17 @@ export default function DonationPage() {
                     )}
 
                     <div className="flex justify-between">
-                      <Button variant="outline" onClick={handleBack} aria-label="Back to Payment Method">
-                        Back
+                      <Button variant="outline" onClick={handleBack} aria-label="Back to Your Details">
+                        Back to Your Details
                       </Button>
                       <Button
                         variant="default"
                         size="lg"
                         className="bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-bold py-4 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                         onClick={handleDonate}
-                        disabled={isSubmitting}
                         aria-label="Submit Donation"
                       >
-                        {isSubmitting ? 'Processing...' : `Donate to ${selectedChildNeed.name}`}
+                        Donate to {selectedChildNeed.name}
                       </Button>
                     </div>
                   </>

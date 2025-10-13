@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 
-export default function AdminDonations() {
+export default function AdminGiftDonations() {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [editingPaymentLink, setEditingPaymentLink] = useState(null);
   const [paymentLinkValue, setPaymentLinkValue] = useState('');
-  const navigate = useNavigate();
 
   const fetchDonations = async (searchTerm = '') => {
     setLoading(true);
@@ -26,7 +24,9 @@ export default function AdminDonations() {
       });
       if (!res.ok) throw new Error('Failed to fetch donations');
       const data = await res.json();
-      setDonations(data);
+      // Filter only gift donations
+      const giftDonations = data.filter(donation => donation.gift_id);
+      setDonations(giftDonations);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -107,7 +107,7 @@ export default function AdminDonations() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Manage Donations</h1>
+      <h1 className="text-2xl font-bold mb-4">Manage Gift Donations</h1>
       <form onSubmit={handleSearchSubmit} className="mb-4">
         <input
           type="text"
@@ -117,7 +117,7 @@ export default function AdminDonations() {
           className="border p-2 rounded w-full max-w-md"
         />
       </form>
-      {loading && <p>Loading donations...</p>}
+      {loading && <p>Loading gift donations...</p>}
       {error && <p className="text-red-600">{error}</p>}
       {!loading && !error && (
         <table className="w-full border-collapse border border-gray-300">
@@ -127,8 +127,6 @@ export default function AdminDonations() {
               <th className="border border-gray-300 p-2">Email</th>
               <th className="border border-gray-300 p-2">Amount</th>
               <th className="border border-gray-300 p-2">Gift</th>
-              <th className="border border-gray-300 p-2">Payment</th>
-              <th className="border border-gray-300 p-2">Recurring</th>
               <th className="border border-gray-300 p-2">Date</th>
               <th className="border border-gray-300 p-2">Status</th>
               <th className="border border-gray-300 p-2">Payment Link</th>
@@ -142,20 +140,10 @@ export default function AdminDonations() {
                 <td className="border border-gray-300 p-2">{donation.email}</td>
                 <td className="border border-gray-300 p-2">${parseFloat(donation.amount).toFixed(2)}</td>
                 <td className="border border-gray-300 p-2">
-                  {donation.gift_name ? (
-                    <div>
-                      <div className="font-semibold">{donation.gift_name}</div>
-                      <div className="text-sm text-gray-600">{donation.gift_category}</div>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">General donation</span>
-                  )}
-                </td>
-                <td className="border border-gray-300 p-2 capitalize">
-                  {donation.payment_method || 'N/A'}
-                </td>
-                <td className="border border-gray-300 p-2">
-                  {donation.recurring ? 'Yes' : 'No'}
+                  <div>
+                    <div className="font-semibold">{donation.gift_name}</div>
+                    <div className="text-sm text-gray-600">{donation.gift_category}</div>
+                  </div>
                 </td>
                 <td className="border border-gray-300 p-2">{new Date(donation.date).toLocaleDateString()}</td>
                 <td className="border border-gray-300 p-2 capitalize">{donation.status}</td>
@@ -202,6 +190,9 @@ export default function AdminDonations() {
             ))}
           </tbody>
         </table>
+      )}
+      {!loading && !error && donations.length === 0 && (
+        <p className="text-center text-gray-500 mt-8">No gift donations found.</p>
       )}
     </div>
   );

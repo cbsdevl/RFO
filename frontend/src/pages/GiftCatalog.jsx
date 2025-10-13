@@ -1,70 +1,34 @@
-import { useState, Suspense } from 'react';
-import { FaGift, FaHeart, FaShoppingCart } from 'react-icons/fa';
+import { useState, useEffect, Suspense } from 'react';
+import { FaGift, FaHeart, FaShoppingCart, FaSpinner } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 // Lazy import for Navbar
 
 export default function GiftCatalog() {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedGift, setSelectedGift] = useState(null);
+  const [gifts, setGifts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const gifts = [
-    {
-      id: 1,
-      name: 'School Supplies Kit',
-      category: 'education',
-      price: 25,
-      image: '/gift1.jpg',
-      description: 'Complete set of notebooks, pencils, erasers, and rulers for a student.',
-      impact: 'Helps a child stay focused on learning'
-    },
-    {
-      id: 2,
-      name: 'Art Supplies Set',
-      category: 'talent',
-      price: 30,
-      image: '/gift2.jpg',
-      description: 'Colors, brushes, sketchbook, and craft materials for creative expression.',
-      impact: 'Nurtures artistic talents and creativity'
-    },
-    {
-      id: 3,
-      name: 'Sports Equipment',
-      category: 'health',
-      price: 40,
-      image: '/gift3.jpg',
-      description: 'Football, basketball, or other sports gear for physical activity.',
-      impact: 'Promotes healthy lifestyle and teamwork'
-    },
-    {
-      id: 4,
-      name: 'Books Collection',
-      category: 'education',
-      price: 35,
-      image: '/gift4.jpg',
-      description: 'Age-appropriate storybooks and educational materials.',
-      impact: 'Builds reading habits and knowledge'
-    },
-    {
-      id: 5,
-      name: 'Hygiene Kit',
-      category: 'health',
-      price: 20,
-      image: '/gift5.jpg',
-      description: 'Soap, toothbrush, toothpaste, and other personal care items.',
-      impact: 'Maintains health and dignity'
-    },
-    {
-      id: 6,
-      name: 'Winter Clothing',
-      category: 'basic',
-      price: 45,
-      image: '/gift6.jpg',
-      description: 'Warm jacket, sweater, and accessories for cold weather.',
-      impact: 'Provides comfort and protection'
+  useEffect(() => {
+    fetchGifts();
+  }, []);
+
+  const fetchGifts = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/gifts');
+      if (!response.ok) {
+        throw new Error('Failed to fetch gifts');
+      }
+      const data = await response.json();
+      setGifts(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const categories = [
     { id: 'all', name: 'All Gifts', icon: FaGift },
@@ -79,8 +43,8 @@ export default function GiftCatalog() {
     : gifts.filter(gift => gift.category === selectedCategory);
 
   const handleDonate = (gift) => {
-    // Navigate to donation page with selected gift info as state
-    navigate('/donation', { state: { gift } });
+    // Navigate to gift donation page with selected gift info as state
+    navigate('/giftdonation', { state: { gift } });
   };
 
   return (
@@ -120,36 +84,64 @@ export default function GiftCatalog() {
           </div>
         </div>
 
-        {/* Gifts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {filteredGifts.map((gift) => (
-            <div
-              key={gift.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <FaSpinner className="animate-spin text-4xl text-purple-600" />
+            <span className="ml-4 text-xl text-gray-600">Loading gifts...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-20">
+            <p className="text-xl text-red-600 mb-4">Error loading gifts: {error}</p>
+            <button
+              onClick={fetchGifts}
+              className="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-300"
             >
-              <div className="h-48 bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-                <FaGift className="text-6xl text-white" />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{gift.name}</h3>
-                <p className="text-gray-600 mb-4">{gift.description}</p>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-2xl font-bold text-purple-600">${gift.price}</span>
-                  <span className="text-sm text-gray-500 capitalize">{gift.category}</span>
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Gifts Grid */}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {filteredGifts.map((gift) => (
+              <div
+                key={gift.id}
+                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+              >
+                <div className="h-48 bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
+                  {gift.image_url ? (
+                    <img src={`http://localhost:5000${gift.image_url}`} alt={gift.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <FaGift className="text-6xl text-white" />
+                  )}
                 </div>
-                <p className="text-sm text-green-600 mb-4 italic">
-                  {gift.impact}
-                </p>
-                <button
-                  onClick={() => handleDonate(gift)}
-                  className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-300"
-                >
-                  Donate This Gift
-                </button>
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{gift.name}</h3>
+                  <p className="text-gray-600 mb-4">{gift.description}</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-2xl font-bold text-purple-600">${gift.price}</span>
+                    <span className="text-sm text-gray-500 capitalize">{gift.category}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-gray-500">Stock: {gift.stock_quantity}</span>
+                  </div>
+                  <button
+                    onClick={() => handleDonate(gift)}
+                    className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors duration-300 disabled:opacity-50"
+                    disabled={gift.stock_quantity <= 0}
+                  >
+                    {gift.stock_quantity <= 0 ? 'Out of Stock' : 'Donate This Gift'}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Call to Action */}
         <div className="text-center bg-white rounded-xl shadow-lg p-8">

@@ -45,6 +45,9 @@ export default function AdminLayout() {
             <Link to="/admin/partners" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Partners</Link>
             <Link to="/admin/sponsor-projects" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Sponsor Projects</Link>
             <Link to="/admin/sponsors" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Sponsors</Link>
+            <Link to="/admin/gifts" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Gifts</Link>
+            <Link to="/admin/gift-donations" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Gift Donations</Link>
+            <Link to="/admin/hero-images" style={{ display: 'flex', alignItems: 'center', padding: '0.75rem', borderRadius: '4px', textDecoration: 'none', color: '#374151' }}>Hero Images</Link>
           </nav>
         </div>
 

@@ -75,6 +75,17 @@ const sponsorProjectStorage = multer.diskStorage({
 });
 const uploadSponsorProject = multer({ storage: sponsorProjectStorage });
 
+// Multer setup for gift image uploads
+const giftStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/gift-images/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+const uploadGift = multer({ storage: giftStorage });
+
 // MySQL connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
@@ -300,7 +311,13 @@ app.post('/api/donate', async (req, res) => {
       const message = gift_id
         ? 'Gift donation submitted and pending approval. Thank you for your generous gift!'
         : 'Donation submitted and pending approval. Thank you!';
-      res.json({ message });
+      // For gift donations, return a payment link to simulate payment process
+      if (gift_id) {
+        const successUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/thank-you`;
+        res.json({ payment_link: successUrl, message });
+      } else {
+        res.json({ message });
+      }
     });
   }
 });
@@ -463,6 +480,17 @@ app.put('/api/admin/donations/:id/status', authenticateToken, (req, res) => {
   db.query(query, [status, id], (err, result) => {
     if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
     res.json({ message: 'Status updated successfully' });
+  });
+});
+
+// Admin: Update Donation Payment Link
+app.put('/api/admin/donations/:id/payment-link', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { payment_link } = req.body;
+  const query = 'UPDATE donations SET payment_link = ? WHERE id = ?';
+  db.query(query, [payment_link, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Payment link updated successfully' });
   });
 });
 
@@ -1036,8 +1064,8 @@ app.put('/api/admin/sponsor-projects/:id', authenticateToken, uploadSponsorProje
   if (!name || !funding_goal) {
     return res.status(400).json({ error: 'Name and funding goal are required' });
   }
-  let query = 'UPDATE sponsor_projects SET name = ?, description = ?, funding_goal = ?, current_funding = ?, location = ?, category = ?, status = ?, start_date = ?, end_date = ?, contact_person = ?, contact_email = ?, contact_phone = ?';
-  let params = [name, description, parseFloat(funding_goal), parseFloat(funding_raised || 0), location, category, status, start_date, end_date, contact_person, contact_email, contact_phone];
+  let query = 'UPDATE sponsor_projects SET name = ?, description = ?, funding_goal = ?, current_funding = ?, location = ?, category = ?, status = ?, start_date = ?, end_date = ?, contact_person = ?, contact_email = ?, contact_phone = ?, payment_link = ?';
+  let params = [name, description, parseFloat(funding_goal), parseFloat(funding_raised || 0), location, category, status, start_date, end_date, contact_person, contact_email, contact_phone, payment_link];
   if (uploaded_image_url !== undefined) {
     query += ', image_url = ?';
     params.push(uploaded_image_url);
@@ -1047,6 +1075,17 @@ app.put('/api/admin/sponsor-projects/:id', authenticateToken, uploadSponsorProje
   db.query(query, params, (err, result) => {
     if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
     res.json({ message: 'Sponsor project updated successfully' });
+  });
+});
+
+// Admin: Update sponsor project payment link
+app.put('/api/admin/sponsor-projects/:id/payment-link', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { payment_link } = req.body;
+  const query = 'UPDATE sponsor_projects SET payment_link = ? WHERE id = ?';
+  db.query(query, [payment_link, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Payment link updated successfully' });
   });
 });
 
@@ -1160,6 +1199,170 @@ app.post('/api/setup-sponsors-table', (req, res) => {
       return res.status(500).json({ error: 'Failed to create sponsors table' });
     }
     res.json({ message: 'Sponsors table created successfully with sample data' });
+  });
+});
+
+// Public: Get all gifts
+app.get('/api/gifts', (req, res) => {
+  const query = 'SELECT id, name, description, image_url, price, category, stock_quantity, is_active FROM gifts WHERE is_active = TRUE ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Public: Get single gift
+app.get('/api/gifts/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'SELECT * FROM gifts WHERE id = ? AND is_active = TRUE';
+  db.query(query, [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'Gift not found' });
+    res.json(results[0]);
+  });
+});
+
+// Admin: Get all gifts (admin view)
+app.get('/api/admin/gifts', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM gifts ORDER BY created_at DESC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Create gift
+app.post('/api/admin/gifts', authenticateToken, uploadGift.single('image'), (req, res) => {
+  const { name, description, price, category, stock_quantity, is_active } = req.body;
+  const image_url = req.file ? `/uploads/gift-images/${req.file.filename}` : null;
+  if (!name || !price) {
+    return res.status(400).json({ error: 'Name and price are required' });
+  }
+  const query = 'INSERT INTO gifts (name, description, image_url, price, category, stock_quantity, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [name, description, image_url, parseFloat(price), category, parseInt(stock_quantity || 0), is_active !== undefined ? (is_active ? 1 : 0) : 1], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Gift created successfully', id: result.insertId });
+  });
+});
+
+// Admin: Update gift
+app.put('/api/admin/gifts/:id', authenticateToken, uploadGift.single('image'), (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, category, stock_quantity, is_active } = req.body;
+  const image_url = req.file ? `/uploads/gift-images/${req.file.filename}` : null;
+  if (!name || !price) {
+    return res.status(400).json({ error: 'Name and price are required' });
+  }
+  let query = 'UPDATE gifts SET name = ?, description = ?, price = ?, category = ?, stock_quantity = ?, is_active = ?';
+  let params = [name, description, parseFloat(price), category, parseInt(stock_quantity || 0), is_active ? 1 : 0];
+  if (image_url) {
+    query += ', image_url = ?';
+    params.push(image_url);
+  }
+  query += ' WHERE id = ?';
+  params.push(id);
+  db.query(query, params, (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Gift updated successfully' });
+  });
+});
+
+// Admin: Delete gift
+app.delete('/api/admin/gifts/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM gifts WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Gift deleted successfully' });
+  });
+});
+
+// Create gifts table (one-time setup)
+app.post('/api/setup-gifts-table', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  const sqlFile = path.join(__dirname, 'create_gifts_table.sql');
+  const sql = fs.readFileSync(sqlFile, 'utf8');
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('Error creating gifts table:', err);
+      return res.status(500).json({ error: 'Failed to create gifts table' });
+    }
+    res.json({ message: 'Gifts table created successfully' });
+  });
+});
+
+// Public: Get hero images
+app.get('/api/hero-images', (req, res) => {
+  const query = 'SELECT id, image_url, alt_text FROM hero_images WHERE is_active = TRUE ORDER BY display_order ASC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Get all hero images (admin view)
+app.get('/api/admin/hero-images', authenticateToken, (req, res) => {
+  const query = 'SELECT * FROM hero_images ORDER BY display_order ASC';
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Admin: Create hero image
+app.post('/api/admin/hero-images', authenticateToken, (req, res) => {
+  const { image_url, alt_text, display_order, is_active } = req.body;
+  if (!image_url) {
+    return res.status(400).json({ error: 'Image URL is required' });
+  }
+  const query = 'INSERT INTO hero_images (image_url, alt_text, display_order, is_active) VALUES (?, ?, ?, ?)';
+  db.query(query, [image_url, alt_text || '', parseInt(display_order || 0), is_active !== undefined ? (is_active ? 1 : 0) : 1], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Hero image created successfully', id: result.insertId });
+  });
+});
+
+// Admin: Update hero image
+app.put('/api/admin/hero-images/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { image_url, alt_text, display_order, is_active } = req.body;
+  if (!image_url) {
+    return res.status(400).json({ error: 'Image URL is required' });
+  }
+  const query = 'UPDATE hero_images SET image_url = ?, alt_text = ?, display_order = ?, is_active = ? WHERE id = ?';
+  db.query(query, [image_url, alt_text || '', parseInt(display_order || 0), is_active ? 1 : 0, id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Update failed' });
+    res.json({ message: 'Hero image updated successfully' });
+  });
+});
+
+// Admin: Delete hero image
+app.delete('/api/admin/hero-images/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM hero_images WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err || result.affectedRows === 0) return res.status(500).json({ error: 'Delete failed' });
+    res.json({ message: 'Hero image deleted successfully' });
+  });
+});
+
+// Create hero images table (one-time setup)
+app.post('/api/setup-hero-images-table', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+
+  const sqlFile = path.join(__dirname, 'create_hero_images_table.sql');
+  const sql = fs.readFileSync(sqlFile, 'utf8');
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('Error creating hero images table:', err);
+      return res.status(500).json({ error: 'Failed to create hero images table' });
+    }
+    res.json({ message: 'Hero images table created successfully with sample data' });
   });
 });
 

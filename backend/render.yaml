@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: rfo-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        fromSecret: db_host
+      - key: DB_USER
+        fromSecret: db_user
+      - key: DB_PASS
+        fromSecret: db_pass
+      - key: DB_NAME
+        fromSecret: db_name
+      - key: JWT_SECRET
+        fromSecret: jwt_secret
+      - key: EMAIL_HOST
+        fromSecret: email_host
+      - key: EMAIL_PORT
+        fromSecret: email_port
+      - key: EMAIL_USER
+        fromSecret: email_user
+      - key: EMAIL_PASS
+        fromSecret: email_pass
+      - key: FRONTEND_URL
+        fromSecret: frontend_url
+      - key: PESAPAL_CONSUMER_KEY
+        fromSecret: pesapal_consumer_key
+      - key: PESAPAL_CONSUMER_SECRET
+        fromSecret: pesapal_consumer_secret
+      - key: PESAPAL_ENV
+        fromSecret: pesapal_env
+      - key: PESAPAL_NOTIFICATION_ID
+        fromSecret: pesapal_notification_id
