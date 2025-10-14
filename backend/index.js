@@ -42,7 +42,6 @@ app.use(cors({
     if (!origin) return callback(null, true);
 
     const allowedOrigins = [
-      'http://localhost:5173', // Development frontend
       'https://risefamily.vercel.app' // Production frontend
     ];
 
