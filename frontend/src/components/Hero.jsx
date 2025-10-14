@@ -44,7 +44,7 @@ export default function Hero() {
     const fetchHeroImages = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/hero-images');
+        const response = await fetch('https://rfo-fyrk.onrender.com/api/hero-images');
         if (!response.ok) {
           throw new Error('Failed to fetch hero images');
         }
