@@ -32,7 +32,7 @@ export default function AdminSponsorProjects() {
   const fetchProjects = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/sponsor-projects', {
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/admin/sponsor-projects', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -81,7 +81,7 @@ export default function AdminSponsorProjects() {
 
       if (editingProject) {
         // Update existing project
-        const response = await fetch(`http://localhost:5000/api/admin/sponsor-projects/${editingProject.id}`, {
+        const response = await fetch(`https://rfo-fyrk.onrender.com/api/admin/sponsor-projects/${editingProject.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -113,7 +113,7 @@ export default function AdminSponsorProjects() {
         }
       } else {
         // Create new project
-        const response = await fetch('http://localhost:5000/api/admin/sponsor-projects', {
+        const response = await fetch('https://rfo-fyrk.onrender.com/api/admin/sponsor-projects', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -158,7 +158,7 @@ export default function AdminSponsorProjects() {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`http://localhost:5000/api/admin/sponsor-projects/${id}`, {
+        const response = await fetch(`https://rfo-fyrk.onrender.com/api/admin/sponsor-projects/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -561,7 +561,7 @@ export default function AdminSponsorProjects() {
                   <div className="mb-3">
                     <p className="text-sm text-gray-600 mb-2">Current Image:</p>
                     <img
-                      src={`http://localhost:5000${editingProject.image_url}`}
+                      src={`https://rfo-fyrk.onrender.com${editingProject.image_url}`}
                       alt="Current project image"
                       className="w-32 h-24 object-cover rounded-lg border"
                     />

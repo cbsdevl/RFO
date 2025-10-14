@@ -21,7 +21,7 @@ export default function AdminTestimonials() {
   const fetchTestimonials = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/testimonials', {
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/admin/testimonials', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -46,8 +46,8 @@ export default function AdminTestimonials() {
     try {
       const token = localStorage.getItem('adminToken');
       const url = editingTestimonial
-        ? `http://localhost:5000/api/admin/testimonials/${editingTestimonial.id}`
-        : 'http://localhost:5000/api/admin/testimonials';
+        ? `https://rfo-fyrk.onrender.com/api/admin/testimonials/${editingTestimonial.id}`
+        : 'https://rfo-fyrk.onrender.com/api/admin/testimonials';
       const method = editingTestimonial ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -89,7 +89,7 @@ export default function AdminTestimonials() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/testimonials/${id}`, {
+      const response = await fetch(`https://rfo-fyrk.onrender.com/api/admin/testimonials/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

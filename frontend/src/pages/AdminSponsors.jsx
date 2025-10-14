@@ -22,7 +22,7 @@ export default function AdminSponsors() {
   const fetchSponsors = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/sponsors', {
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/admin/sponsors', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -77,7 +77,7 @@ export default function AdminSponsors() {
     setUpdating(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/sponsors/${selectedSponsor.id}`, {
+      const response = await fetch(`https://rfo-fyrk.onrender.com/api/admin/sponsors/${selectedSponsor.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +119,7 @@ export default function AdminSponsors() {
     setStatusUpdating(sponsorId);
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/sponsors/${sponsorId}/status`, {
+      const response = await fetch(`https://rfo-fyrk.onrender.com/api/admin/sponsors/${sponsorId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

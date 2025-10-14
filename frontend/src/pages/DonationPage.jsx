@@ -25,7 +25,7 @@ export default function DonationPage() {
 
   // Fetch child needs on component mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/child-needs')
+    fetch('https://rfo-fyrk.onrender.com/api/child-needs')
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch child needs');
         return res.json();
@@ -115,7 +115,7 @@ export default function DonationPage() {
     if (selectedChildNeed) {
       body.child_need_id = selectedChildNeed.id;
     }
-    fetch('/api/donate', {
+    fetch('https://rfo-fyrk.onrender.com/api/donate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -145,7 +145,7 @@ export default function DonationPage() {
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={closeImageModal}>
           <div className="relative w-full max-w-4xl max-h-full">
             <img
-              src={`http://localhost:5000${selectedImage.url}`}
+              src={`https://rfo-fyrk.onrender.com${selectedImage.url}`}
               alt={`Full view of ${selectedImage.name}`}
               className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
             />
@@ -219,7 +219,7 @@ export default function DonationPage() {
               <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8">
                 <div className="text-center">
                   <img
-                    src={`http://localhost:5000${donationSuccess.child.image_url}`}
+                    src={`https://rfo-fyrk.onrender.com${donationSuccess.child.image_url}`}
                     alt={`Photo of ${donationSuccess.child.name}`}
                     className="w-32 h-32 object-cover rounded-full mx-auto mb-4 border-4 border-white shadow-lg"
                   />
@@ -261,7 +261,7 @@ export default function DonationPage() {
                 <CardContent className="p-6">
                   <div className="text-center mb-4">
                     <img
-                      src={`http://localhost:5000${child.image_url}`}
+                      src={`https://rfo-fyrk.onrender.com${child.image_url}`}
                       alt={`Photo of ${child.name}`}
                       className="w-24 h-24 object-cover rounded-full mx-auto mb-4 cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => handleImageClick(child.image_url, child.name)}

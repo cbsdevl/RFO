@@ -21,7 +21,7 @@ export default function AdminNews() {
   const fetchNews = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await axios.get('/api/admin/news', {
+      const res = await axios.get('https://rfo-fyrk.onrender.com/api/admin/news', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNews(res.data);
@@ -44,11 +44,11 @@ export default function AdminNews() {
 
     try {
       if (editingNews) {
-        await axios.put(`/api/admin/news/${editingNews.id}`, data, {
+        await axios.put(`https://rfo-fyrk.onrender.com/api/admin/news/${editingNews.id}`, data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('/api/admin/news', data, {
+        await axios.post('https://rfo-fyrk.onrender.com/api/admin/news', data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -63,7 +63,7 @@ export default function AdminNews() {
     if (!confirm('Are you sure you want to delete this news?')) return;
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.delete(`/api/admin/news/${id}`, {
+      await axios.delete(`https://rfo-fyrk.onrender.com/api/admin/news/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchNews();

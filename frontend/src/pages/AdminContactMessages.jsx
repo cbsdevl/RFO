@@ -13,7 +13,7 @@ export default function AdminContactMessages() {
   const fetchMessages = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admin/contact-messages', {
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/admin/contact-messages', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

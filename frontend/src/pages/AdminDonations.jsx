@@ -16,8 +16,8 @@ export default function AdminDonations() {
     setError(null);
     try {
       const url = searchTerm
-        ? `/api/admin/donations?search=${encodeURIComponent(searchTerm)}`
-        : '/api/admin/donations';
+        ? `https://rfo-fyrk.onrender.com/api/admin/donations?search=${encodeURIComponent(searchTerm)}`
+        : 'https://rfo-fyrk.onrender.com/api/admin/donations';
       const res = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
@@ -40,7 +40,7 @@ export default function AdminDonations() {
 
   const handleApprove = async (id) => {
     try {
-      const res = await fetch(`/api/admin/donations/${id}/status`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/donations/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -57,7 +57,7 @@ export default function AdminDonations() {
 
   const handleReject = async (id) => {
     try {
-      const res = await fetch(`/api/admin/donations/${id}/status`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/donations/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export default function AdminDonations() {
 
   const handleSavePaymentLink = async (id) => {
     try {
-      const res = await fetch(`/api/admin/donations/${id}/payment-link`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/donations/${id}/payment-link`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

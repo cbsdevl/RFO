@@ -22,7 +22,7 @@ export default function AdminChildNeeds() {
   const fetchChildNeeds = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await axios.get('api/admin/child-needs', {
+      const res = await axios.get('https://rfo-fyrk.onrender.com/api/admin/child-needs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setChildNeeds(res.data);
@@ -46,11 +46,11 @@ export default function AdminChildNeeds() {
       if (formData.image) data.append('image', formData.image);
 
       if (editingChild) {
-        await axios.put(`/api/admin/child-needs/${editingChild.id}`, data, {
+        await axios.put(`https://rfo-fyrk.onrender.com/api/admin/child-needs/${editingChild.id}`, data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('/api/admin/child-needs', data, {
+        await axios.post('https://rfo-fyrk.onrender.com/api/admin/child-needs', data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -67,7 +67,7 @@ export default function AdminChildNeeds() {
     if (!confirm('Are you sure you want to delete this child need?')) return;
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.delete(`/api/admin/child-needs/${id}`, {
+      await axios.delete(`https://rfo-fyrk.onrender.com/api/admin/child-needs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchChildNeeds();

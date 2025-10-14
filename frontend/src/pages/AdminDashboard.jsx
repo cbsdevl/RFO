@@ -13,7 +13,7 @@ export default function AdminDashboard() {
           setStats({ donations: 'No token', totalDonated: 'No token', helpRequests: 'No token', pendingRequests: 'No token' });
           return;
         }
-        const res = await axios.get('/api/admin/stats', {
+        const res = await axios.get('https://rfo-fyrk.onrender.com/api/admin/stats', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStats(res.data);

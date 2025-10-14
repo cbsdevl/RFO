@@ -18,7 +18,7 @@ export default function AdminHeroImages() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/hero-images', {
+      const res = await fetch('https://rfo-fyrk.onrender.com/api/admin/hero-images', {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
@@ -49,7 +49,7 @@ export default function AdminHeroImages() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const url = editingImage ? `/api/admin/hero-images/${editingImage.id}` : '/api/admin/hero-images';
+      const url = editingImage ? `https://rfo-fyrk.onrender.com/api/admin/hero-images/${editingImage.id}` : '/api/admin/hero-images';
       const method = editingImage ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -92,7 +92,7 @@ export default function AdminHeroImages() {
     if (!confirm('Are you sure you want to delete this hero image?')) return;
 
     try {
-      const res = await fetch(`/api/admin/hero-images/${id}`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/hero-images/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('adminToken')}`,

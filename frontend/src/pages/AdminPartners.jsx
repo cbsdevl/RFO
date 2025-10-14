@@ -22,7 +22,7 @@ export default function AdminPartners() {
   const fetchPartners = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/partners', {
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/admin/partners', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -47,8 +47,8 @@ export default function AdminPartners() {
     try {
       const token = localStorage.getItem('adminToken');
       const url = editingPartner
-        ? `http://localhost:5000/api/admin/partners/${editingPartner.id}`
-        : 'http://localhost:5000/api/admin/partners';
+        ? `https://rfo-fyrk.onrender.com/api/admin/partners/${editingPartner.id}`
+        : 'https://rfo-fyrk.onrender.com/api/admin/partners';
       const method = editingPartner ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -91,7 +91,7 @@ export default function AdminPartners() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/partners/${id}`, {
+      const response = await fetch(`https://rfo-fyrk.onrender.com/api/admin/partners/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

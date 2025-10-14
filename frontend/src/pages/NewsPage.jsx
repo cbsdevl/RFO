@@ -9,7 +9,7 @@ export default function NewsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetch('/api/news')
+    fetch('https://rfo-fyrk.onrender.com/api/news')
       .then(res => res.json())
       .then(data => {
         setNews(data);

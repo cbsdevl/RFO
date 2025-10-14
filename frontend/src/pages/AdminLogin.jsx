@@ -15,7 +15,7 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post('/api/admin/login', credentials);
+      const res = await axios.post('https://rfo-fyrk.onrender.com/api/admin/login', credentials);
       login(res.data.token);
       navigate('/admin/dashboard');
     } catch (err) {

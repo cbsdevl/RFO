@@ -14,8 +14,8 @@ export default function AdminVolunteers() {
     setError(null);
     try {
       const url = searchTerm
-        ? `/api/admin/volunteers?search=${encodeURIComponent(searchTerm)}`
-        : '/api/admin/volunteers';
+        ? `https://rfo-fyrk.onrender.com/api/admin/volunteers?search=${encodeURIComponent(searchTerm)}`
+        : 'https://rfo-fyrk.onrender.com/api/admin/volunteers';
       const res = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ export default function AdminVolunteers() {
 
   const handleApprove = async (id) => {
     try {
-      const res = await fetch(`/api/admin/volunteers/${id}/status`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/volunteers/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ export default function AdminVolunteers() {
 
   const handleReject = async (id) => {
     try {
-      const res = await fetch(`/api/admin/volunteers/${id}/status`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/volunteers/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export default function AdminVolunteers() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this volunteer application?')) return;
     try {
-      const res = await fetch(`/api/admin/volunteers/${id}`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/volunteers/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

@@ -23,7 +23,7 @@ export default function SponsorProjects() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/sponsor-projects');
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/sponsor-projects');
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
@@ -59,7 +59,7 @@ export default function SponsorProjects() {
       return;
     }
     // Record the sponsorship in the backend
-    fetch('/api/sponsor', {
+    fetch('https://rfo-fyrk.onrender.com/api/sponsor', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ export default function SponsorProjects() {
               <div key={project.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="relative">
                   <img
-                    src={project.image_url ? `http://localhost:5000${project.image_url}` : '/placeholder-project.jpg'}
+                    src={project.image_url ? `https://rfo-fyrk.onrender.com${project.image_url}` : '/placeholder-project.jpg'}
                     alt={project.name}
                     className="w-full h-48 object-cover"
                     onError={(e) => {
@@ -171,7 +171,7 @@ export default function SponsorProjects() {
               <div className="md:flex">
                 <div className="md:w-1/2">
                   <img
-                    src={selectedProject.image_url ? `http://localhost:5000${selectedProject.image_url}` : '/placeholder-project.jpg'}
+                    src={selectedProject.image_url ? `https://rfo-fyrk.onrender.com${selectedProject.image_url}` : '/placeholder-project.jpg'}
                     alt={selectedProject.name}
                     className="w-full h-64 md:h-full object-cover"
                     onError={(e) => {

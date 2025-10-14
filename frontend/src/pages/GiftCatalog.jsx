@@ -115,7 +115,7 @@ export default function GiftCatalog() {
               >
                 <div className="h-48 bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
                   {gift.image_url ? (
-                    <img src={`http://localhost:5000${gift.image_url}`} alt={gift.name} className="w-full h-full object-cover" />
+                    <img src={`https://rfo-fyrk.onrender.com${gift.image_url}`} alt={gift.name} className="w-full h-full object-cover" />
                   ) : (
                     <FaGift className="text-6xl text-white" />
                   )}

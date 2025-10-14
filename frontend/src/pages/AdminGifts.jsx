@@ -20,7 +20,7 @@ export default function AdminGifts() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/gifts', {
+      const res = await fetch('https://rfo-fyrk.onrender.com/api/admin/gifts', {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
@@ -58,7 +58,7 @@ export default function AdminGifts() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const url = editingGift ? `/api/admin/gifts/${editingGift.id}` : '/api/admin/gifts';
+      const url = editingGift ? `https://rfo-fyrk.onrender.com/api/admin/gifts/${editingGift.id}` : '/api/admin/gifts';
       const method = editingGift ? 'PUT' : 'POST';
 
       const formPayload = new FormData();
@@ -116,7 +116,7 @@ export default function AdminGifts() {
     if (!confirm('Are you sure you want to delete this gift?')) return;
 
     try {
-      const res = await fetch(`/api/admin/gifts/${id}`, {
+      const res = await fetch(`https://rfo-fyrk.onrender.com/api/admin/gifts/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
