@@ -21,7 +21,7 @@ export default function AdminNews() {
   const fetchNews = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await axios.get('http://localhost:5000/api/admin/news', {
+      const res = await axios.get('/api/admin/news', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNews(res.data);
@@ -44,11 +44,11 @@ export default function AdminNews() {
 
     try {
       if (editingNews) {
-        await axios.put(`http://localhost:5000/api/admin/news/${editingNews.id}`, data, {
+        await axios.put(`/api/admin/news/${editingNews.id}`, data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('http://localhost:5000/api/admin/news', data, {
+        await axios.post('/api/admin/news', data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -63,7 +63,7 @@ export default function AdminNews() {
     if (!confirm('Are you sure you want to delete this news?')) return;
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.delete(`http://localhost:5000/api/admin/news/${id}`, {
+      await axios.delete(`/api/admin/news/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchNews();
@@ -163,7 +163,7 @@ export default function AdminNews() {
         {news.map((item) => (
           <div key={item.id} style={{ padding: '1rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             {item.image_url && (
-              <img src={`http://localhost:5000${item.image_url}`} alt={item.title} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.5rem' }} />
+              <img src={`https://rfo-fyrk.onrender.com${item.image_url}`} alt={item.title} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.5rem' }} />
             )}
             <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{item.title}</h3>
             <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>{item.category}</p>

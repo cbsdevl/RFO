@@ -22,7 +22,7 @@ export default function AdminChildNeeds() {
   const fetchChildNeeds = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await axios.get('http://localhost:5000/api/admin/child-needs', {
+      const res = await axios.get('api/admin/child-needs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setChildNeeds(res.data);
@@ -46,11 +46,11 @@ export default function AdminChildNeeds() {
       if (formData.image) data.append('image', formData.image);
 
       if (editingChild) {
-        await axios.put(`http://localhost:5000/api/admin/child-needs/${editingChild.id}`, data, {
+        await axios.put(`/api/admin/child-needs/${editingChild.id}`, data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('http://localhost:5000/api/admin/child-needs', data, {
+        await axios.post('/api/admin/child-needs', data, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -67,7 +67,7 @@ export default function AdminChildNeeds() {
     if (!confirm('Are you sure you want to delete this child need?')) return;
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.delete(`http://localhost:5000/api/admin/child-needs/${id}`, {
+      await axios.delete(`/api/admin/child-needs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchChildNeeds();
@@ -191,7 +191,7 @@ export default function AdminChildNeeds() {
           <div key={child.id} style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             {child.image_url && (
               <img
-                src={`http://localhost:5000${child.image_url}`}
+                src={`https://rfo-fyrk.onrender.com${child.image_url}`}
                 alt={`Child ${child.id}`}
                 style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px', marginBottom: '0.5rem' }}
               />

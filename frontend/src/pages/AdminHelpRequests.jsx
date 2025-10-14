@@ -22,7 +22,7 @@ export default function AdminHelpRequests() {
     try {
       const token = localStorage.getItem('adminToken');
       const params = new URLSearchParams(filter);
-      const res = await axios.get(`http://localhost:5000/api/admin/help-requests?${params}`, {
+      const res = await axios.get(`/api/admin/help-requests?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRequests(res.data);
@@ -37,7 +37,7 @@ export default function AdminHelpRequests() {
   const fetchChildNeeds = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const res = await axios.get('http://localhost:5000/api/admin/child-needs', {
+      const res = await axios.get('/api/admin/child-needs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setChildNeeds(res.data);
@@ -52,7 +52,7 @@ export default function AdminHelpRequests() {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.put(`http://localhost:5000/api/admin/help-requests/${id}/status`, { status }, {
+      await axios.put(`/api/admin/help-requests/${id}/status`, { status }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchRequests(); // Refresh list
@@ -73,12 +73,12 @@ export default function AdminHelpRequests() {
 
     try {
       if (editingChild) {
-        await axios.put(`http://localhost:5000/api/admin/child-needs/${editingChild.id}`, formData, {
+        await axios.put(`/api/admin/child-needs/${editingChild.id}`, formData, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
         });
         alert('Child need updated');
       } else {
-        await axios.post('http://localhost:5000/api/admin/child-needs', formData, {
+        await axios.post('/api/admin/child-needs', formData, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
         });
         alert('Child need created');
@@ -101,7 +101,7 @@ export default function AdminHelpRequests() {
     if (!confirm('Delete this child need?')) return;
     try {
       const token = localStorage.getItem('adminToken');
-      await axios.delete(`http://localhost:5000/api/admin/child-needs/${id}`, {
+      await axios.delete(`/api/admin/child-needs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchChildNeeds();
@@ -220,7 +220,7 @@ export default function AdminHelpRequests() {
                 {childNeeds.map((child) => (
                   <tr key={child.id}>
                     <td style={{ padding: '0.75rem', border: '1px solid #e5e7eb' }}>
-                      {child.image_url && <img src={`http://localhost:5000${child.image_url}`} alt="Child" style={{ width: '50px', height: '50px', objectFit: 'cover' }} />}
+                      {child.image_url && <img src={`https://rfo-fyrk.onrender.com${child.image_url}`} alt="Child" style={{ width: '50px', height: '50px', objectFit: 'cover' }} />}
                     </td>
                     <td style={{ padding: '0.75rem', border: '1px solid #e5e7eb' }}>{child.age}</td>
                     <td style={{ padding: '0.75rem', border: '1px solid #e5e7eb' }}>{child.location}</td>

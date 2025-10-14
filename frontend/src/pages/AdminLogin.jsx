@@ -15,7 +15,7 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post('http://localhost:5000/api/admin/login', credentials);
+      const res = await axios.post('/api/admin/login', credentials);
       login(res.data.token);
       navigate('/admin/dashboard');
     } catch (err) {
@@ -62,9 +62,6 @@ export default function AdminLogin() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-        <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
-          Default: admin / admin123
-        </p>
       </div>
     </div>
   );

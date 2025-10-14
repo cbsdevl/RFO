@@ -44,7 +44,7 @@ export default function Hero() {
     const fetchHeroImages = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/hero-images');
+        const response = await fetch('/api/hero-images');
         if (!response.ok) {
           throw new Error('Failed to fetch hero images');
         }

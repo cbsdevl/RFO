@@ -34,7 +34,7 @@ export default function Partners() {
   const fetchPartners = async () => {
     try {
       console.log('Fetching partners from API...');
-      const response = await fetch('http://localhost:5000/api/partners');
+      const response = await fetch('/api/partners');
       console.log('Response status:', response.status);
       if (response.ok) {
         const data = await response.json();
