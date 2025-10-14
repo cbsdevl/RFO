@@ -25,7 +25,7 @@ export default function DonationPage() {
 
   // Fetch child needs on component mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/child-needs')
+    fetch('/api/child-needs')
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch child needs');
         return res.json();
@@ -115,7 +115,7 @@ export default function DonationPage() {
     if (selectedChildNeed) {
       body.child_need_id = selectedChildNeed.id;
     }
-    fetch('http://localhost:5000/api/donate', {
+    fetch('/api/donate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

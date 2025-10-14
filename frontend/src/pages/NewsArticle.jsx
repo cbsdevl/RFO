@@ -9,7 +9,7 @@ export default function NewsArticle() {
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/news/${id}`)
+    fetch(`/api/news/${id}`)
       .then(res => res.json())
       .then(data => setArticle(data))
       .catch(err => console.error('Error fetching article:', err))

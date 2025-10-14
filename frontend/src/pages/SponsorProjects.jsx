@@ -23,7 +23,7 @@ export default function SponsorProjects() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/sponsor-projects');
+      const response = await fetch('/api/sponsor-projects');
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
@@ -59,7 +59,7 @@ export default function SponsorProjects() {
       return;
     }
     // Record the sponsorship in the backend
-    fetch('http://localhost:5000/api/sponsor', {
+    fetch('/api/sponsor', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
