@@ -25,7 +25,7 @@ export default function DonationPage() {
 
   // Fetch child needs on component mount
   useEffect(() => {
-    fetch('/api/child-needs')
+    fetch('http://localhost:5000/api/child-needs')
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch child needs');
         return res.json();
