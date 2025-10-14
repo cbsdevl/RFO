@@ -49,7 +49,7 @@ export default function HelpRegistration() {
     setIsSubmitting(true);
     setSubmitMessage('');
     try {
-      const res = await fetch('/api/register-help', {
+      const res = await fetch('http://localhost:5000/api/register-help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

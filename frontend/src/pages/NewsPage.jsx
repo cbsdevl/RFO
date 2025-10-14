@@ -9,7 +9,7 @@ export default function NewsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetch('/api/news')
+    fetch('http://localhost:5000/api/news')
       .then(res => res.json())
       .then(data => {
         setNews(data);
