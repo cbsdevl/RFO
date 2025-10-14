@@ -17,7 +17,7 @@ export default function GiftCatalog() {
 
   const fetchGifts = async () => {
     try {
-      const response = await fetch('/api/gifts');
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/gifts');
       if (!response.ok) {
         throw new Error('Failed to fetch gifts');
       }
