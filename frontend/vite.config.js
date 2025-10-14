@@ -10,10 +10,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  define: {
+    __API_BASE__: JSON.stringify(process.env.VITE_API_BASE || 'http://localhost:5000'),
+  },
   server: {
     proxy: {
       '/api': {
-        target: 'https://rfo-fyrk.onrender.com',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },

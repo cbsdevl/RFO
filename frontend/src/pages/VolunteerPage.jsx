@@ -60,7 +60,7 @@ export default function VolunteerPage() {
     setIsSubmitting(true);
     setSubmitMessage('');
     try {
-      const res = await fetch('http://localhost:5000/api/volunteers', {
+      const res = await fetch('https://rfo-fyrk.onrender.com/api/volunteers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

@@ -33,7 +33,6 @@ const LazyPrograms = lazy(() => import('./components/Programs').catch(() => ({ d
 const LazyLatestNews = lazy(() => import('./components/LatestNews').catch(() => ({ default: () => <section style={{ padding: '1rem' }}><h3>News Placeholder</h3></section> })));
 const LazyTestimonials = lazy(() => import('./components/Testimonials').catch(() => ({ default: () => <section style={{ padding: '1rem' }}><h3>Testimonials Placeholder</h3></section> })));
 const LazyPartners = lazy(() => import('./components/Partners').catch(() => ({ default: () => <section style={{ padding: '1rem' }}><h3>Partners Placeholder</h3></section> })));
-const LazyDonationAppeal = lazy(() => import('./components/DonationAppeal').catch(() => ({ default: () => <section style={{ padding: '1rem' }}><h3>Donation Placeholder</h3></section> })));
 const LazyAboutPage = lazy(() => import('./pages/AboutPage').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>About Page Placeholder</h3></div> })));
 const LazyVisionMissionPage = lazy(() => import('./components/VisionMission').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>Vision Mission Page Placeholder</h3></div> })));
 const LazyDonationPage = lazy(() => import('./pages/DonationPage').catch(() => ({ default: () => <div style={{ padding: '2rem' }}><h3>Donation Page Placeholder</h3></div> })));
@@ -105,9 +104,6 @@ function HomePage() {
         <LazyPartners />
       </Suspense>
 
-      <Suspense fallback={<section style={{ backgroundColor: 'lightgray', padding: '1rem' }}><h3>Loading Donation...</h3></section>}>
-        <LazyDonationAppeal />
-      </Suspense>
     </div>
   );
 }
