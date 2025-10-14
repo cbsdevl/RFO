@@ -33,7 +33,7 @@ export default function NewsArticle() {
         <div className="absolute inset-0">
           {article.image_url ? (
             <img
-              src={`http://localhost:5000${article.image_url}`}
+              src={`https://rfo-fyrk.onrender.com${article.image_url}`}
               alt={article.title}
               className="w-full h-full object-cover opacity-30"
             />

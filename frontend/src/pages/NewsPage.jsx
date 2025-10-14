@@ -9,7 +9,7 @@ export default function NewsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/news')
+    fetch('/api/news')
       .then(res => res.json())
       .then(data => {
         setNews(data);
@@ -61,7 +61,7 @@ export default function NewsPage() {
               <div className="relative h-48 overflow-hidden">
                 {item.image_url ? (
                   <img
-                    src={`http://localhost:5000${item.image_url}`}
+                    src={`https://rfo-fyrk.onrender.com${item.image_url}`}
                     alt={item.title}
                     className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500"
                   />
