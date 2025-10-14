@@ -13,7 +13,7 @@ export default function DonationAppeal() {
 
   // Fetch child needs on component mount
   useEffect(() => {
-    fetch('/api/child-needs')
+    fetch('https://rfo-fyrk.onrender.com/api/child-needs')
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch child needs');
         return res.json();
@@ -43,7 +43,7 @@ export default function DonationAppeal() {
       if (selectedChildNeed) {
         body.child_need_id = selectedChildNeed.id;
       }
-      const res = await fetch('http://localhost:5000/api/donate', {
+      const res = await fetch('https://rfo-fyrk.onrender.com/api/donate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -57,7 +57,7 @@ export default function DonationAppeal() {
       setEmail('');
       setSelectedChildNeed(null);
       // Refresh child needs
-      fetch('http://localhost:5000/api/child-needs')
+      fetch('https://rfo-fyrk.onrender.com/api/child-needs')
         .then(res => res.json())
         .then(data => setChildNeeds(data))
         .catch(err => console.error('Error refreshing child needs:', err));
@@ -95,7 +95,7 @@ export default function DonationAppeal() {
                 }`}
               >
                 <img
-                  src={`http://localhost:5000${child.image_url}`}
+                  src={`https://rfo-fyrk.onrender.com${child.image_url}`}
                   alt={`Child need ${child.id}`}
                   className="w-full h-48 object-cover rounded-t-lg"
                 />

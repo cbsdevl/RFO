@@ -6,7 +6,7 @@ export default function LatestNews() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/news')
+    fetch('https://rfo-fyrk.onrender.com/api/news')
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -43,7 +43,7 @@ export default function LatestNews() {
               <div className="relative h-48 overflow-hidden">
                 {item.image_url ? (
                   <img
-                    src={`${item.image_url}`}
+                    src={`https://rfo-fyrk.onrender.com${item.image_url}`}
                     alt={item.title}
                     className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500"
                   />

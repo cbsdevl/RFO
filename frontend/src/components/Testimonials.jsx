@@ -25,7 +25,7 @@ export default function Testimonials() {
 
   const fetchTestimonials = async () => {
     try {
-      const response = await fetch('/api/testimonials');
+      const response = await fetch('https://rfo-fyrk.onrender.com/api/testimonials');
       if (response.ok) {
         const data = await response.json();
         setTestimonials(data);
