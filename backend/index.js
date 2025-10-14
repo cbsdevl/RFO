@@ -36,7 +36,23 @@ const transporter = nodemailer.createTransport({
 const app = express();
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:5173' })); // Allow frontend at Vite's default port
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:5173', // Development frontend
+      'https://risefamily.vercel.app' // Production frontend
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 app.use(express.json());
 
 // Serve static files for uploaded images
